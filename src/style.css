@@ -1,0 +1,375 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Montserrat:wght@300&family=Roboto:wght@300&family=Roboto:wght@700&&family=Rock+Salt&display=swap');
+
+:root {
+    --gradientColor: #ffffff;
+}
+
+body {
+    margin: 0;
+    padding: 0px 0px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.2rem;
+    background: #f9f9f9;
+    height: 100svh;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+h2,
+h3,
+h4 {
+    margin: 0;
+    /* font-weight: 300; */
+    font-family: 'Montserrat', sans-serif;
+}
+
+p, a {
+    color: hsl(0, 0%, 30%);
+}
+
+.primaryHeading {
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.8rem;
+    color: hsl(0, 0%, 10%);
+}
+.secondaryHeading {
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.4rem;
+    color: hsl(0, 0%, 10%);
+}
+.tertiaryHeading {
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.2rem;
+    color: hsl(0, 0%, 10%);
+    width: fit-content;
+}
+
+.primaryButton{
+    background: hsl(0,0%,10%);
+    border: none;
+    border-radius: 10px;
+    color: hsl(0, 0%, 98%);
+    font-family: Roboto, sans-serif;
+    font-weight: 300;
+    font-size: 1.2rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    cursor: pointer;
+    height: fit-content;
+}
+.primaryButton:hover{
+    background: hsl(0,0%,30%);
+}
+.primaryButton:disabled{
+    background: hsl(0,0%,50%);
+    cursor: default;
+}
+
+.secondaryButton{
+    background: hsl(0,0%,98%);
+    border: 1px solid hsl(0,0%,10%);
+    border-radius: 10px;
+    color: hsl(0, 0%, 10%);
+    font-family: Roboto, sans-serif;
+    font-weight: 300;
+    font-size: 1.2rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+}
+.secondaryButton:hover{
+    background: hsl(0,0%,95%);
+}
+
+.tertiaryButton{
+    background: none;
+    border: none;
+    border-radius: 10px;
+    color: inherit;
+    font-family: Roboto, sans-serif;
+    font-weight: 300;
+    font-size: 1.2rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+}
+.tertiaryButton:hover{
+    text-decoration: underline;
+}
+
+details {
+    width: 100%;
+    font-family: 'Roboto', sans-serif;
+    margin-top: 10px;
+}
+
+summary {
+    width: 100%;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+}
+
+summary::-webkit-details-marker {
+    display: none;
+    /* Hide default marker in Safari */
+}
+
+summary::after {
+    align-self: center;
+    content: '+';
+    /* Custom marker */
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+    margin-right: 0.5em;
+    margin-left: auto;
+}
+
+summary:focus {
+    outline: none;
+}
+
+details[open]>summary::after {
+    content: '-';
+    /* Change marker when open */
+}
+
+button {
+    font-size: 1.2rem;
+    font-weight: 300;
+    cursor: pointer;
+}
+
+textarea {
+    width: 100%;
+    height: fit-content;
+    resize: none;
+    border-radius: 10px;
+    padding: 5px;
+    box-sizing: border-box;
+    font-size: 1.2rem;
+    font-weight: 300;
+    margin-top: 5px;
+}
+
+img,
+video {
+    border-radius: 10px;
+}
+
+/* width */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+
+    /* height: 0.5em; */
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    background: hsl(155, 70%, 55%, 2%);
+    border-radius: 5px;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: hsla(0, 0%, 35%, 0.5);
+    border-radius: 5px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+    background: hsl(0, 0%, 0%);
+}
+
+
+.elementContainer {
+    width: 100%;
+    background-color: #f9f9f9;
+    position: relative;
+    max-width: 800px;
+    box-sizing: border-box;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 0px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+    border-radius: 20px;
+    border: 1px solid #f9f9f9;
+    background: linear-gradient(45deg, #f9f9f950, #f9f9f990);
+    box-shadow: 0 0 10px #1a1a1a20;
+}
+
+.colorLine {
+    width: 100%;
+    /* width: fit-content;
+    min-width: 30px; */
+    height: 5px;
+    border-radius: 2px;
+    /* padding: 10px; */
+    border-radius: 10px;
+    /* margin-right: 10px; */
+    box-sizing: border-box;
+}
+
+.controlsMenu {
+    /* display: flex; */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    /* grid-auto-rows: 40px; */
+    gap: 10px;
+    align-items: center;
+}
+
+.generationControlsButton {
+    align-self: center;
+    max-width: 300px;
+    /* width: 120px; */
+    height: 40px;
+    background: #1a1a1a;
+    color: #f9f9f9;
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+    margin: 5px 10px 5px 0;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.generationControlsButton:hover {
+    background: #1a1a1a30;
+}
+
+.generationControlsButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.optionsButton {
+    position: relative;
+    align-self: center;
+    max-width: 300px;
+    /* width: 120px; */
+    height: 40px;
+    border: 1px solid #1a1a1a50;
+    border-radius: 10px;
+    background: #f9f9f9;
+    color: #1a1a1a;
+    border-radius: 10px;
+    padding: 10px;
+    margin-right: 10px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 300;
+    box-sizing: border-box;
+}
+
+.optionsButton:hover {
+    background: #1a1a1a30;
+}
+
+.optionsButton:disabled {
+    background: #1a1a1a20;
+    opacity: 0.5;
+    cursor: default;
+}
+
+.settingsButton {
+    height: 30px;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+    color: #1a1a1a;
+    display: flex;
+    align-items: center;
+}
+
+.smallMenuButton {
+    background: none;
+    border: none;
+    color: inherit;
+    font-family: Roboto, sans-serif;
+    font-weight: 300;
+    font-size: 1.2rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+}
+
+.smallMenuButton:hover {
+    text-decoration: underline;
+}
+
+.warning, .black-dot, .transparent-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    background: orange;
+    margin-right: 10px;
+}
+.black-dot {
+    background: hsl(0, 0%, 10%);
+}
+.transparent-dot {
+    background: hsla(0, 0%, 10%, 0%);
+}
+.loader {
+    displaY: block;
+    width: 10px;
+    height: 10px;
+    margin: 10px;
+    border: 2px solid;
+    border-radius: 50%;
+    border-color: #1a1a1a transparent;
+    animation: rotation 1s linear infinite;
+}
+.descriptionButton {
+    margin: 0;
+    margin-top: 10px;
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+    box-sizing: border-box;
+    text-align: left;
+    background: hsl(0, 0%, 93%);
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+    color: hsl(0, 0%, 0%);
+    word-wrap: break-word;
+}
+.hintContainer{
+    display: flex;
+    flex-direction: column;
+    margin-top: 20px;
+}
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
