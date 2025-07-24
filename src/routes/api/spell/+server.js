@@ -5,7 +5,7 @@ import { systemPrompt } from "$lib/systemPrompt.js";
 export async function POST({ request, locals }) {
     try {
 
-        const { prompt } = await request.json();
+        const { prompt, schema } = await request.json();
         console.log(request)
         console.log( prompt )
 
@@ -31,7 +31,9 @@ export async function POST({ request, locals }) {
                     "content": [
                         {
                             "type": "input_text",
-                            "text": `${prompt}`
+                            "text": schema
+						? `${prompt}\n\nCurrent schema (JSON):\n${JSON.stringify(schema)}`
+						: prompt
                         },
                         // {
                         //     "type": "input_image",
