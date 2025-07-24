@@ -5,7 +5,7 @@ import { universalSchema } from '$lib/modules/schema.js';
 import { buildSceneFromSchema } from '$lib/modules/interpreter/index.js';
 import { initGUI } from './guiControls.js';
 
-export function start(canvas){
+export function start(canvas, schema){
   /* Three.js setup */
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
   renderer.setSize(window.innerWidth,window.innerHeight);
@@ -23,10 +23,10 @@ export function start(canvas){
   g.rotation.x=-Math.PI/2; g.receiveShadow=true; scene.add(g);
 
   /* Build scene */
-  const {objects,regenerate}=buildSceneFromSchema(universalSchema,scene);
+  const {objects,regenerate}=buildSceneFromSchema(schema,scene);
 
   /* GUI */
-  initGUI(universalSchema,objects,regenerate);
+  initGUI(schema,objects,regenerate);
 
   /* Responsive */
   window.addEventListener('resize',()=>{

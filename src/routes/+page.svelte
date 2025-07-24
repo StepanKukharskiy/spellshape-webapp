@@ -1,14 +1,34 @@
 <script lang="ts">
+    import { page } from '$app/state';
     import logo from '$lib/images/spellshape.png'
+    import { schema } from '$lib/store';
+    import { goto } from '$app/navigation';
+
     let inputValue = $state('')
     let isLoading = $state(false)
     let user = $state(null)
     
-    function handleSubmit() {
+    async function handleSubmit() {
         if (inputValue.trim()) {
             isLoading = true
             // Your 3D generation logic here
             console.log('Generating 3D model for:', inputValue)
+		const message = await fetch(`${page.url.origin}/api/spell`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				prompt: inputValue,
+			})
+		});
+		const messageObject = await message.json();
+		const generatedText = messageObject;
+		console.log(messageObject);
+        schema.set(messageObject);
+        isLoading = false
+        goto(`/viewer`);
+		return generatedText;
         }
     }
     

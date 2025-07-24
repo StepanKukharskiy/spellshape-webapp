@@ -15,6 +15,9 @@ export function buildSceneFromSchema(schema, scene, {
   const registry = new Map();
   const objects  = new Map();
 
+  console.log(schema)
+  console.log(schema.children)
+
   schema.children.forEach(child=>_build(child,scene,''));
 
   /* ---------- public helpers ---------- */

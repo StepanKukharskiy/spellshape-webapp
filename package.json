@@ -39,6 +39,8 @@
 	},
 	"dependencies": {
 		"dat.gui": "^0.7.9",
+		"dotenv": "^17.2.0",
+		"openai": "^5.10.2",
 		"three": "^0.178.0"
 	}
 }
