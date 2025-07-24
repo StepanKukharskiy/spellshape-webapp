@@ -152,7 +152,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: #0000eb;
+        background: radial-gradient(circle at top, #0000eb, #000052);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         position: relative;
         overflow-y: scroll;

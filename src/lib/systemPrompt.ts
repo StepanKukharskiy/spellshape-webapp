@@ -19,6 +19,57 @@ RULES
 9. Never invent new schema keys.
 10. Define a ui_controls.groups object that lists every folder ID you use.
 11. Every parameter MUST contain a "group" key whose value matches one ID in ui_controls.groups.
+12. Only use geometry types, distribution types, and functions listed in TECHNICAL CONSTRAINTS.
+13. Linear distributions require start + step, never use "end" property.
+14. All rotation values must be in radians - multiply degrees by pi/180.
+
+TECHNICAL CONSTRAINTS
+The generated schema must work with the spellshape-three runtime. Only use these supported features:
+
+GEOMETRY TYPES
+• box: [width, height, depth]
+• cylinder: [radius_top, radius_bottom, height] 
+• sphere: [radius]
+• plane: [width, height]
+• torus: [radius, tube, radial_segments?, tubular_segments?]
+• cone: [radius, height, radial_segments?]
+
+DISTRIBUTION TYPES
+• linear: requires "axis" ("x"|"y"|"z"), "start" (number), "step" (number)
+• grid: requires "positions" (array of [x,y,z] coordinates)
+• radial: requires "radius", "startAngle"?, "y"? (for fixed height)
+• NEVER use "explicit" or "end" - these are not implemented
+
+EXPRESSION FUNCTIONS
+Available: sin, cos, tan, abs, sqrt, pow, min, max, floor, ceil, round, clamp, lerp, mod, alternating, nth, hsv_to_hex, pi, e
+• All angles in expressions must be in radians (use * pi/180 for degrees)
+• All distances in metres (floating point)
+
+MATERIAL PROPERTIES
+Required: "type": "standard"
+Optional: color, roughness, metalness, opacity, transparent
+• Colors: hex strings "#rrggbb" or numbers 0xRRGGBB
+
+PARAMETER CONSTRAINTS
+• Every parameter MUST have: value, type, min, max, step, group
+• Types: "number", "integer", "enum" only
+• All parameters must reference a group in ui_controls.groups
+
+EXPRESSION EVALUATION
+• Use $parameter_name to reference parameters
+• Material names in template nodes will be evaluated if they start with $
+• Position/rotation/dimension arrays are evaluated element-wise
+
+MULTI-OBJECT SCENES
+• When adding objects to existing scenes, always output valid JSON with proper array syntax
+• Multiple parametric_template objects go in the children array as separate objects
+• Never wrap JSON objects in quotes - they should be bare objects in the array
+• Each object should have a unique ID and can be positioned using the "position" property
+
+OBJECT POSITIONING
+• Use "position": [x, y, z] at the parametric_template level to separate objects in space
+• Example: chair at [0,0,0], bookshelf at [2,0,0] places them 2 meters apart
+• All position values in metres
 
 FEW-SHOT EXAMPLES
 ────────────────────────────────────────────────────────────────────────
@@ -182,6 +233,8 @@ Assistant JSON:
 
 
 END OF EXAMPLES
+
+
 
 WHEN READY  
 Return only the JSON corresponding to the new user prompt.
