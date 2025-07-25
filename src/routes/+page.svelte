@@ -1,12 +1,14 @@
 <script lang="ts">
     import { page } from '$app/state';
-    import logo from '$lib/images/spellshape.png'
+    import logoText from '$lib/images/spellshape.png'
     import { schema } from '$lib/store';
     import { goto } from '$app/navigation';
+    import logo from '$lib/images/spellshape_logo.svg'
 
     let inputValue = $state('')
     let isLoading = $state(false)
     let user = $state(null)
+    
     
     async function handleSubmit() {
         if (inputValue.trim()) {
@@ -58,19 +60,6 @@
 </script>
 
 <div class="container">
-    <!-- Simplified Background SVG -->
-    <svg class="background-scribble" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet">
-        <path d="M300 50 Q450 150 350 300 Q500 450 300 400 Q150 550 250 300 Q50 150 300 200 Q550 250 400 450 Q200 600 300 350 Q600 200 450 300 Q100 400 350 150 Q500 50 300 250" 
-              fill="none" 
-              stroke="rgba(255, 255, 255, 0.8)" 
-              stroke-width="1.5" 
-              stroke-linecap="round"/>
-        <path d="M300 100 Q400 200 200 300 Q500 400 300 500 Q100 300 400 250 Q550 150 250 400 Q50 500 350 200 Q600 300 300 450" 
-              fill="none" 
-              stroke="rgba(255, 255, 255, 0.5)" 
-              stroke-width="1" 
-              stroke-linecap="round"/>
-    </svg>
 
     <div class="content">
         <div class="auth-header">
@@ -88,7 +77,7 @@
         </div>
 
         <header class="header">
-            <div class="logo"><img src='{logo}' alt='logo'/></div>
+            <div class="logo"><img src='{logoText}' alt='logo'/></div>
             <h1 class='title'>"Ta-da!" moment of 3D generation</h1>
             <!-- <p class="subtitle">Create controllable 3D models with AI magic</p> -->
         </header>
@@ -114,9 +103,7 @@
                             <div class="spinner"></div>
                             Working on it...
                         {:else}
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                            </svg>
+                            <img src='{logo}' alt='logo' style='width: 20px; height: 20px;'/>
                             Spellshape Now
                         {/if}
                     </button>
@@ -152,7 +139,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: radial-gradient(circle at top, #0000eb, #000052);
+        background: radial-gradient(circle at top, #0000eb, #000065);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         position: relative;
         overflow-y: scroll;
@@ -257,10 +244,10 @@
     }
     
     .title {
-        font-size: 2.5rem;
+        font-size: 2.3rem;
         font-weight: 700;
         color: white;
-        margin: 0 0 0.5rem 0;
+        margin: 0 0 0.6rem 0;
     }
     
     .subtitle {
