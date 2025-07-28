@@ -7,10 +7,15 @@
 
     let inputValue = $state('')
     let isLoading = $state(false)
-    let user = $state(null)
+    let user = $state(page.data.user)
+    $effect( ()=>{user = page.data.user; })
     
     
     async function handleSubmit() {
+        if (!user) {
+        goto('/user/signin');
+        return;
+    }
         if (inputValue.trim()) {
             isLoading = true
             // Your 3D generation logic here
@@ -50,12 +55,28 @@
 
     function handleSignIn() {
         // Navigate to sign in page or open modal
-        window.location.href = '/auth/signin'
+        window.location.href = '/user/signin'
     }
     
     function handleSignUp() {
         // Navigate to sign up page or open modal
-        window.location.href = '/auth/signup'
+        window.location.href = '/user/signup'
+    }
+
+    async function handleSignOut() {
+        
+        try {
+        await fetch('/api/user/signout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        // The redirect will happen on the server side
+        window.location.href = '/';
+    } catch (err) {
+        console.error('Logout failed:', err);
+    }
     }
 </script>
 
@@ -65,8 +86,8 @@
         <div class="auth-header">
             {#if user}
                 <div class="user-info">
-                    <span>Welcome, {user.name}</span>
-                    <button class="auth-btn secondary">Sign Out</button>
+                    <span>Welcome, {user.email}</span>
+                    <button class="auth-btn secondary" onclick={handleSignOut}>Sign Out</button>
                 </div>
             {:else}
                 <div class="auth-buttons">
@@ -79,6 +100,7 @@
         <header class="header">
             <div class="logo"><img src='{logoText}' alt='logo'/></div>
             <h1 class='title'>"Ta-da!" moment of 3D generation</h1>
+
             <!-- <p class="subtitle">Create controllable 3D models with AI magic</p> -->
         </header>
         

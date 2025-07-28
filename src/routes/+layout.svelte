@@ -9,6 +9,7 @@
 		$width = innerWidth;
 		$height = innerHeight;
 	});
+
 </script>
 
 <svelte:window bind:innerWidth bind:innerHeight />
