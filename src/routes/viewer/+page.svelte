@@ -71,7 +71,7 @@
 		busyMsg = 'Thinking…';
 
 		try {
-			const r = await fetch('/api/spell', {
+			const r = await fetch('/api/generateJson', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({

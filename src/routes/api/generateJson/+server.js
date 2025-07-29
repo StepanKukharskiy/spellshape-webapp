@@ -1,19 +1,15 @@
+// This is your existing /api/spell endpoint, renamed and cleaned up
 import OpenAI from "openai";
 import { OPENAI_API_TOKEN } from '$env/static/private';
 import { systemPrompt } from "$lib/systemPrompt.js";
 
-export async function POST({ request, locals }) {
+export async function POST({ request }) {
     try {
-
         const { prompt, schema } = await request.json();
-        console.log(request)
-        console.log( prompt )
-
+        
         const openai = new OpenAI({
             apiKey: OPENAI_API_TOKEN,
         });
-
-        const query = prompt.query
 
         const response = await openai.responses.create({
             model: "o4-mini",
@@ -33,50 +29,39 @@ export async function POST({ request, locals }) {
                         {
                             "type": "input_text",
                             "text": schema
-						? `${prompt}\n\nCurrent schema (JSON):\n${JSON.stringify(schema)}`
-						: prompt
-                        },
-                        // {
-                        //     "type": "input_image",
-                        //     "image_url": ``
-                        // }
+                                ? `${prompt}\n\nCurrent schema (JSON):\n${JSON.stringify(schema)}`
+                                : prompt
+                        }
                     ]
                 },
             ],
             text: {
                 "format": {
-                    "type": "text"
+                    "type": "json_object"
                 }
             },
             reasoning: {},
             tools: [
-                {
-                    "type": "web_search_preview",
-                    "user_location": {
-                        "type": "approximate",
-                        "country": "US"
-                    },
-                    "search_context_size": "medium"
-                }
             ],
             temperature: 1,
             max_output_tokens: 16384,
             top_p: 1,
             store: true
         });
-        //console.log(response.output[0].content[0].text)
-        const spell = JSON.parse(response.output_text);
-        console.log(response.output_text)
 
-        return new Response(JSON.stringify(spell), {
+        const generatedSchema = JSON.parse(response.output_text);
+        
+        return new Response(JSON.stringify(generatedSchema), {
             status: 200,
             headers: {
                 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type',
             }
-        }
-        )
+        });
     } catch (err) {
-        console.log(err)
+        console.error('Generate JSON error:', err);
+        return new Response(JSON.stringify({ error: 'Failed to generate schema' }), {
+            status: 500
+        });
     }
 }
