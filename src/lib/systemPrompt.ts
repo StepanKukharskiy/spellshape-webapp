@@ -344,7 +344,12 @@ Assistant JSON:
 
 ────────────────────────────────────────────────────────────────────────
 User prompt:
-“adjustable dining chair”
+“Create a modern minimalist dining chair with the following specifications:
+    Seat: 45cm x 45cm oak wood seat (#a27c4b) with 5cm thickness, positioned 46cm from the ground
+    Backrest: Matching oak wood back panel, 50cm tall and 4cm thick, positioned slightly inset from the rear edge of the seat
+    Legs: Four slender cylindrical steel legs in brushed finish (#b0b0b0), 2cm diameter, positioned at each corner with 3cm inset from seat edges
+    Style: Contemporary Scandinavian design with warm oak wood contrasting against cool brushed steel, clean geometric proportions, and parametric adjustability for seat dimensions and backrest height
+The chair features a classic four-legged design with modern materials - combining the warmth of natural oak wood with the industrial elegance of brushed steel legs.”
 
 Assistant JSON:
 {

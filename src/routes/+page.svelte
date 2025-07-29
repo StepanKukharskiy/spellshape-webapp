@@ -136,14 +136,31 @@
         <div class="examples">
             <p class="examples-title">Try these magical examples:</p>
             <div class="example-chips">
-                <button class="chip" onclick={() => inputValue = "A parametric office building with adjustable floor heights"}>
-                    Office Building
+                <button class="chip" onclick={() => inputValue = `Create a modern minimalist dining chair with the following specifications:
+    Seat: 45cm x 45cm oak wood seat (#a27c4b) with 5cm thickness, positioned 46cm from the ground
+    Backrest: Matching oak wood back panel, 50cm tall and 4cm thick, positioned slightly inset from the rear edge of the seat
+    Legs: Four slender cylindrical steel legs in brushed finish (#b0b0b0), 2cm diameter, positioned at each corner with 3cm inset from seat edges
+    Style: Contemporary Scandinavian design with warm oak wood contrasting against cool brushed steel, clean geometric proportions, and parametric adjustability for seat dimensions and backrest height
+The chair features a classic four-legged design with modern materials - combining the warmth of natural oak wood with the industrial elegance of brushed steel legs.`}>
+                    Simple Chair
                 </button>
-                <button class="chip" onclick={() => inputValue = "A voxel landscape with customizable rocks and caves"}>
-                    Voxel Landscape
+                <button class="chip" onclick={() => inputValue = `Create a modular 3D kitchen with adjustable parameters:
+Layout: 3-7 base cabinets (0.45-1.0m wide each), standalone fridge on left, continuous countertop, aligned wall cabinets above
+Base Cabinets: 0.8-0.9m high, 0.5-0.7m deep, with side/back panels, shelf, swing door with handle, four cylindrical legs (adjustable height/radius)
+Wall Cabinets: 0.6-0.8m high, 0.3-0.4m deep, mounted 0.5m above counter, same door/handle design
+Countertop: 0.03-0.06m thick with 2cm overhang
+Appliances: Stainless sink (0.55x0.4m) and black glass cooktop (0.58x0.52m), both positionable in any module
+Materials: Light cream cabinets, off-white doors, gray countertop, dark metal handles
+Controls: GUI groups for Layout, Base, Wall, Worktop, and Appliance positioning
+Generate a realistic modern residential kitchen with real-time parameter updates.`}>
+                    Kitchen Design
                 </button>
-                <button class="chip" onclick={() => inputValue = "A modular furniture set with interchangeable components"}>
-                    Modular Furniture
+                <button class="chip" onclick={() => inputValue = `Create a modern 40-story parametric tower with a 90-degree twist occurring over the middle 35% of its height. The building features:
+    Structure: 3-meter floor heights, square footprint, 3 cylindrical columns per side
+    Facade: 15 panels per side alternating between bright blue walls (#0000ff) and light gray windows (#f2f2f2) in a checkerboard pattern
+    Core: Red-orange central core (#d94026) with dark gray structural columns (#404040)
+    Style: Contemporary parametric architecture with clean geometric forms and dramatic rotational geometry`}>
+                    Parametric Tower
                 </button>
             </div>
         </div>
