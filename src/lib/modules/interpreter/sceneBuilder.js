@@ -34,47 +34,65 @@ export function buildSceneFromSchema(schema, scene, {
   return {registry,objects,regenerate};
 
   /* ---------- internal walk ---------- */
-  function _build(node,parent,prefix){
-    const path = prefix?`${prefix}.${node.id}`:node.id;
+  function _build(node, parent, prefix) {
+  const path = prefix ? `${prefix}.${node.id}` : node.id;
 
-    if(node.type==='parametric_template'){
-      const grp=new THREE.Group(); grp.name=path;
-      node.position && grp.position.set(...node.position);
-      node.rotation && grp.rotation.set(...node.rotation);
-      node.scale && grp.scale.set(...node.scale);
-      parent.add(grp);
-      objects.set(path,{node:grp,schema:node});
-      validator.validateConstraints({schema:node});
-      processor.process(node.template,node.parameters,node.expressions)
-               .forEach(n=>_build(n,grp,path));
-      return;
-    }
-
-    if(node.type==='group'){
-      const grp=new THREE.Group(); grp.name=path;
-      node.position && grp.position.set(...node.position);
-      node.rotation && grp.rotation.set(...node.rotation);
-      node.scale && grp.scale.set(...node.scale);
-      parent.add(grp);
-      node.children && node.children.forEach(n=>_build(n,grp,path));
-      return;
-    }
-
-    const geoFactory = geometryPlugins[node.type];
-    if(!geoFactory){ console.warn('No geometry',node.type); return; }
-
-    const matDef =
-    schema.materials?.[node.material] 
-    ?? {}; 
-
-    const mesh=new THREE.Mesh(
-      geoFactory(node.dimensions),
-      materialManager.getMaterial(node.material) ?? materialManager.createMaterial(node.material, matDef));
-    mesh.name=path;
-    node.position && mesh.position.set(...node.position);
-    node.rotation && mesh.rotation.set(...node.rotation);
-    mesh.castShadow=mesh.receiveShadow=true;
-    parent.add(mesh);
-    registry.set(path,mesh);
+  if (node.type === 'parametric_template') {
+    const grp = new THREE.Group(); 
+    grp.name = path;
+    node.position && grp.position.set(...node.position);
+    node.rotation && grp.rotation.set(...node.rotation);
+    node.scale && grp.scale.set(...node.scale);
+    parent.add(grp);
+    objects.set(path, { node: grp, schema: node });
+    validator.validateConstraints({ schema: node });
+    processor.process(node.template, node.parameters, node.expressions)
+             .forEach(n => _build(n, grp, path));
+    return;
   }
+
+  if (node.type === 'group') {
+    const grp = new THREE.Group(); 
+    grp.name = path;
+    node.position && grp.position.set(...node.position);
+    node.rotation && grp.rotation.set(...node.rotation);
+    node.scale && grp.scale.set(...node.scale);
+    parent.add(grp);
+    node.children && node.children.forEach(n => _build(n, grp, path));
+    return;
+  }
+
+  const geoFactory = geometryPlugins[node.type];
+  if (!geoFactory) { 
+    console.warn('No geometry', node.type); 
+    return; 
+  }
+
+  // Fix material handling
+  const materialName = node.material || 'default';
+  const matDef = schema.materials?.[materialName] || { 
+    color: '#ffffff', 
+    roughness: 0.5, 
+    metalness: 0.0 
+  };
+
+  // Always create/get material with proper definition
+  let material = materialManager.getMaterial(materialName);
+  if (!material) {
+    material = materialManager.createMaterial(materialName, matDef);
+  }
+
+  const mesh = new THREE.Mesh(
+    geoFactory(node.dimensions),
+    material
+  );
+  
+  mesh.name = path;
+  node.position && mesh.position.set(...node.position);
+  node.rotation && mesh.rotation.set(...node.rotation);
+  mesh.castShadow = mesh.receiveShadow = true;
+  parent.add(mesh);
+  registry.set(path, mesh);
+}
+
 }

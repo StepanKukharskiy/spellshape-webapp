@@ -40,6 +40,15 @@
 		viewer = await start(canvas, data);
 	}
 
+	// Export function
+    function exportScene(filename = '') {
+        if (viewer?.exportOBJ) {
+            viewer.exportOBJ(filename);
+        } else {
+            console.warn('Export functionality not available');
+        }
+    }
+
 	function validateJSON() {
 		try {
 			const parsed = JSON.parse(jsonText);
@@ -128,7 +137,7 @@
 <div class="wrapper">
 	<!-- ───── Sidebar ───── -->
 	<div class="sidebar" style="width:{sidebarWidth}%;">
-		<a class="brand-bar" href="/" on:click|preventDefault={() => goto('/')}>
+		<a class="brand-bar" href="/" onclick={() => goto('/')}>
 			<img src={logoSrc} alt="Spellshape" />
 			<img
 				src={logoText}
@@ -143,8 +152,8 @@
 			class="editor"
 			bind:value={jsonText}
 			spellcheck="false"
-			on:input={validateJSON}
-			on:keydown={onJsonKey}
+			oninput={validateJSON}
+			onkeydown={onJsonKey}
 		></textarea>
 
 		{#if jsonError}<div class="error-bar">{jsonError}</div>{/if}
@@ -156,13 +165,13 @@
 				rows="2"
 				placeholder="Describe a change…"
 				bind:value={chatPrompt}
-				on:keydown={(e) => e.key === 'Enter' && !e.shiftKey && askAI()}
+				onkeydown={(e) => e.key === 'Enter' && !e.shiftKey && askAI()}
 			></textarea>
 
 			<div class="footer-row">
 				<div class="hint"><kbd>Shift</kbd>+<kbd>Enter</kbd> new line • <kbd>Enter</kbd> send</div>
-				<div style="display: flex; width: 100%; justify-content: space-between;">
-					<button class="generate-btn" on:click={askAI} disabled={!chatPrompt.trim() || busyMsg}>
+				<div style="display: flex; width: 100%; justify-content: start; gap: 10px;">
+					<button class="generate-btn" onclick={askAI} disabled={!chatPrompt.trim() || busyMsg}>
 						{#if busyMsg}<div class="spinner mini"></div>
 							 Working…{:else}
 							<svg
@@ -179,21 +188,30 @@
 
 					<button
 						class="apply-btn"
-						on:click={applyManual}
+						onclick={applyManual}
 						disabled={!!jsonError}
 						title="Parse the text above and refresh the 3-D scene"
 					>
 						Apply&nbsp;Manual&nbsp;Fix
 					</button>
+
 				</div>
 			</div>
 		</div>
 
-		<div class="handle" on:mousedown={startResize}></div>
+		<div class="handle" onmousedown={startResize}></div>
 	</div>
 
 	<!-- ───── 3-D viewer ───── -->
 	<canvas bind:this={canvas}></canvas>
+
+	<button class="export-fab" onclick={()=>{exportScene(spellName)}} title="Export 3-D scene">
+  <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7,10 12,15 17,10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg> OBJ
+</button>
 </div>
 
 <style>
@@ -322,7 +340,8 @@
 	}
 
 	.generate-btn,
-	.apply-btn {
+	.apply-btn, 
+	.export-fab {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
@@ -349,17 +368,17 @@
 		transform: none;
 	}
 
-	.apply-btn {
+	.apply-btn, .export-fab {
 		justify-content: center;
 		background: transparent;
 		color: #0000eb;
 		border: 2px solid #0000eb;
 	}
-	.apply-btn:hover:not(:disabled) {
+	.apply-btn:hover:not(:disabled), .export-fab:hover:not(:disabled) {
 		background: rgba(0, 0, 235, 0.06);
 		transform: translateY(-1px);
 	}
-	.apply-btn:disabled {
+	.apply-btn:disabled, .export-fab:disabled {
 		opacity: 0.4;
 		cursor: not-allowed;
 	}
@@ -368,7 +387,7 @@
 		width: 14px;
 		height: 14px;
 		border: 2px solid rgba(0, 0, 235, 0.3);
-		border-top: 2px solid #0000eb;
+		border-top: 2px solid #ffffff;
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
 	}
@@ -399,6 +418,23 @@
 		display: block;
 		background: #24292f;
 	}
+
+	.export-fab {
+  position: fixed;           /* stays put during scrolling */
+  right: 24px;               /* bottom-right corner */
+  bottom: 24px;
+  padding: 0.7rem 1.2rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  justify-content: center;
+		background: transparent;
+		color: #0000eb;
+		border: 2px solid #0000eb;
+  transition: transform 0.15s ease;
+}
+.export-fab:hover   { transform: translateY(-2px); }
+.export-fab:active  { transform: translateY( 0 ); }
 
 	@media (max-width: 640px) {
 		.sidebar {

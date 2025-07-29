@@ -1,7 +1,7 @@
 /* Boot-straps Three.js, interpreter & GUI[1] */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { universalSchema } from '$lib/modules/schema.js';
+import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 import { buildSceneFromSchema } from '$lib/modules/interpreter/index.js';
 import { initGUI } from './guiControls.js';
 
@@ -16,7 +16,7 @@ export function start(canvas, schema){
     renderer.toneMappingExposure = 1.2;
 
   const scene=new THREE.Scene(); scene.background=new THREE.Color('#f8f9fa');
-  const camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,100);
+  const camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,1000);
   camera.position.set(4,3,6);
   const ctrls=new OrbitControls(camera,renderer.domElement);
 
@@ -29,10 +29,10 @@ export function start(canvas, schema){
     sun.shadow.mapSize.height = 2048;
     sun.shadow.camera.near = 0.5;
     sun.shadow.camera.far = 50;
-    sun.shadow.camera.left = -10;
-    sun.shadow.camera.right = 10;
-    sun.shadow.camera.top = 10;
-    sun.shadow.camera.bottom = -10;
+    sun.shadow.camera.left = -100;
+    sun.shadow.camera.right = 100;
+    sun.shadow.camera.top = 100;
+    sun.shadow.camera.bottom = -100;
     sun.shadow.bias = -0.0001;
     scene.add(sun);
 
@@ -55,7 +55,7 @@ export function start(canvas, schema){
     scene.add(hemisphereLight);
 
     // Ground plane for better shadow reception
-    const groundGeometry = new THREE.PlaneGeometry(20, 20);
+    const groundGeometry = new THREE.PlaneGeometry(100, 100);
     const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.15 });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
@@ -69,6 +69,48 @@ export function start(canvas, schema){
   /* GUI */
   initGUI(schema,objects,regenerate);
 
+  /* Export OBJ */
+  function exportOBJ(filename = 'scene.obj') {
+  const exporter = new OBJExporter();
+
+  const exportGroup = new THREE.Group();
+
+  scene.traverse((child) => {
+    if (child instanceof THREE.Mesh && child.name !== 'ground') {
+      // Clone the mesh so we don’t affect the scene
+      const cloned = child.clone();
+
+      // Make sure world transformations are up to date
+      child.updateWorldMatrix(true, false);
+
+      // Bake world transform into mesh geometry
+      // This mutates the cloned geometry!
+      cloned.geometry = cloned.geometry.clone();
+      cloned.applyMatrix4(child.matrixWorld);
+
+      // Apply position/rotation/scale = identity, since it’s all baked into geometry
+      cloned.position.set(0, 0, 0);
+      cloned.rotation.set(0, 0, 0);
+      cloned.scale.set(1, 1, 1);
+
+      exportGroup.add(cloned);
+    }
+  });
+
+  // Export the group as OBJ
+  const objData = exporter.parse(exportGroup);
+
+  // Download
+  const blob = new Blob([objData], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download =  filename + '.obj';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+
   /* Responsive */
   window.addEventListener('resize',()=>{
     camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
@@ -80,4 +122,7 @@ export function start(canvas, schema){
     requestAnimationFrame(animate);
     ctrls.update(); renderer.render(scene,camera);
   })();
+
+  // Return the export function along with other methods that may be added later
+  return { exportOBJ };
 }
