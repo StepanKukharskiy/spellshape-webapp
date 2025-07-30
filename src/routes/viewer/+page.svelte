@@ -17,7 +17,8 @@
 	let promptModified = $state(false); // Track if prompt was changed
 	let originalJsonText = $state('');
 let jsonModified = $state(false);
-	let busyMsg = $state('');
+	let busyChatting = $state(false);  // For Ask AI button  
+let busyApplying = $state(false);  // For Apply Changes button
 	let jsonError = $state('');
 	let activeTab = $state('prompt');
 
@@ -74,8 +75,6 @@ let jsonModified = $state(false);
 
 	// Function to apply prompt changes
 async function applyPromptChanges() {
-    busyMsg = 'Regenerating from prompt…';
-    
     try {
         const response = await fetch('/api/generateJson', {
             method: 'POST',
@@ -103,15 +102,11 @@ async function applyPromptChanges() {
         
     } catch (err) {
         jsonError = 'Prompt regeneration failed: ' + (err as Error).message;
-    } finally {
-        busyMsg = '';
     }
 }
 
 async function applyJsonChanges() {
     if (!validateJSON()) return;
-    
-    busyMsg = 'Applying JSON changes…';
     
     try {
         const parsed = JSON.parse(jsonText);
@@ -121,8 +116,6 @@ async function applyJsonChanges() {
         spellName = extractSpellName(parsed);
     } catch (err) {
         jsonError = (err as Error).message;
-    } finally {
-        busyMsg = '';
     }
 }
 
@@ -134,11 +127,11 @@ function hasChanges() {
 
 /* Get appropriate button text */
 function getApplyButtonText() {
-    if (busyMsg) return busyMsg;
     if (activeTab === 'prompt' && promptModified) return '🔄 Apply Prompt Changes';
     if (activeTab === 'json' && jsonModified) return '⚙️ Apply JSON Changes';
     return '✨ Apply Changes';
 }
+
 
 
 // Track prompt changes
@@ -154,46 +147,51 @@ function onJsonChange() {
 
 /* Unified apply function that handles both cases */
 async function applyChanges() {
-    if (busyMsg) return;
+    if (busyChatting || busyApplying) return;
+    busyApplying = true;
     
-    // Determine what type of change to apply
-    if (activeTab === 'prompt' && promptModified) {
-        return await applyPromptChanges();
-    } else if (activeTab === 'json' && jsonModified) {
-        return await applyJsonChanges();
-    } else if (activeTab === 'json' && !jsonError) {
-        // Fallback: apply JSON even if not tracked as modified
-        return await applyJsonChanges();
+    try {
+        if (activeTab === 'prompt' && promptModified) {
+            await applyPromptChanges();
+        } else if (activeTab === 'json' && jsonModified) {
+            await applyJsonChanges();
+        } else if (activeTab === 'json' && !jsonError) {
+            await applyJsonChanges();
+        }
+    } finally {
+        busyApplying = false;
     }
 }
 
+
 	async function askAI() {
-		if (!chatPrompt.trim()) return;
-		busyMsg = 'Thinking…';
+    if (!chatPrompt.trim() || busyChatting || busyApplying) return;
+    busyChatting = true;
 
-		try {
-			const r = await fetch('/api/generateJson', {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({
-					prompt: chatPrompt,
-					schema: JSON.parse(jsonText) // send current schema as context
-				})
-			});
-			if (!r.ok) throw new Error(await r.text());
+    try {
+        const r = await fetch('/api/generateJson', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                prompt: chatPrompt,
+                schema: JSON.parse(jsonText)
+            })
+        });
+        if (!r.ok) throw new Error(await r.text());
 
-			const newSchema = await r.json();
-			jsonText = JSON.stringify(newSchema, null, 2);
-			spellName = extractSpellName(newSchema); // ▲ update name
-			jsonError = '';
-			chatPrompt = '';
-			schema.set(newSchema); // triggers viewer restart
-		} catch (err) {
-			jsonError = 'AI request failed: ' + (err as Error).message;
-		} finally {
-			busyMsg = '';
-		}
-	}
+        const newSchema = await r.json();
+        jsonText = JSON.stringify(newSchema, null, 2);
+        spellName = extractSpellName(newSchema);
+        jsonError = '';
+        chatPrompt = '';
+        schema.set(newSchema);
+    } catch (err) {
+        jsonError = 'AI request failed: ' + (err as Error).message;
+    } finally {
+        busyChatting = false;
+    }
+}
+
 
 	/* ---- resize handlers ---- */
 	function startResize(e: MouseEvent) {
@@ -304,34 +302,37 @@ async function applyChanges() {
 			<div class="footer-row">
 				<div class="hint"><kbd>Shift</kbd>+<kbd>Enter</kbd> new line • <kbd>Enter</kbd> send</div>
 				<div style="display: flex; width: 100%; justify-content: start; gap: 10px;">
-					<button class="generate-btn" onclick={askAI} disabled={!chatPrompt.trim() || busyMsg}>
-						{#if busyMsg}<div class="spinner mini"></div>
-							 Working…{:else}
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-								fill="none"
-								stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg
-							>
-							Ask&nbsp;AI
-						{/if}
-					</button>
+					<!-- Ask AI Button -->
+    <button 
+        class="generate-btn" 
+        onclick={askAI} 
+        disabled={!chatPrompt.trim() || busyChatting || busyApplying}
+    >
+        {#if busyChatting}
+            <div class="spinner mini"></div>
+            Thinking…
+        {:else}
+            <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+            Ask&nbsp;AI
+        {/if}
+    </button>
 
-					<button
-                class="apply-btn {hasChanges() ? 'has-changes' : ''}"
-                onclick={applyChanges}
-                disabled={busyMsg || (activeTab === 'json' && !!jsonError)}
-                title={activeTab === 'prompt' ? 'Regenerate from edited prompt' : 'Apply JSON changes and refresh 3D scene'}
-            >
-                {#if busyMsg && hasChanges()}
-                    <div class="spinner mini"></div>
-                    {getApplyButtonText()}
-                {:else}
-                    {getApplyButtonText()}
-                {/if}
-            </button>
+    <!-- Apply Changes Button -->
+    <button
+        class="apply-btn {hasChanges() ? 'has-changes' : ''}"
+        onclick={applyChanges}
+        disabled={busyChatting || busyApplying || (activeTab === 'json' && !!jsonError)}
+        title={activeTab === 'prompt' ? 'Regenerate from edited prompt' : 'Apply JSON changes and refresh 3D scene'}
+    >
+        {#if busyApplying}
+            <div class="spinner mini"></div>
+            Working…
+        {:else}
+            {getApplyButtonText()}
+        {/if}
+    </button>
 
 				</div>
 			</div>
