@@ -71,10 +71,11 @@ export function initGUI(schema, objects, regenerate) {
 }
 
 /* -------------------------------------------------
-   Helper for manual cleanup (rarely needed—initGUI
-   already destroys any existing panel)
+   Helper for manual cleanup
 ------------------------------------------------- */
 export function destroyGUI() {
-	gui?.destroy();
-	gui = undefined;
+    if (gui) {
+        gui.destroy();
+        gui = null; // Important: set to null after destroying
+    }
 }

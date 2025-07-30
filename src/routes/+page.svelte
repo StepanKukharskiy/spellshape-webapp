@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
 	import logoText from '$lib/images/spellshape.png';
 	import { schema, generatedPrompt } from '$lib/store';
 	import { goto } from '$app/navigation';
@@ -12,6 +13,13 @@
 	$effect(() => {
 		user = page.data.user;
 	});
+
+	onMount(() => {
+    // Ensure no GUI is present on the front page
+    import('$lib/modules/guiControls.js').then(({ destroyGUI }) => {
+        destroyGUI();
+    });
+});
 
 	async function handleSubmit() {
 		if (!user) {

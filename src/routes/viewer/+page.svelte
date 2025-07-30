@@ -230,7 +230,7 @@ async function applyChanges() {
         });
 
         return () => {
-            viewer?.dispose?.();
+            viewer?.destroy?.();
             unsubSchema();
             unsubPrompt();
         };

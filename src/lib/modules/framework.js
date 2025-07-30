@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 import { buildSceneFromSchema } from '$lib/modules/interpreter/index.js';
-import { initGUI } from './guiControls.js';
+import { initGUI, destroyGUI } from './guiControls.js';
 
 export function start(canvas, schema){
   /* Three.js setup */
@@ -123,6 +123,27 @@ export function start(canvas, schema){
     ctrls.update(); renderer.render(scene,camera);
   })();
 
+  /* Cleanup function */
+  function destroy() {
+    // Cancel animation loop
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+    }
+
+    // Remove event listeners
+    window.removeEventListener('resize', handleResize);
+
+    // Destroy GUI
+    destroyGUI();
+
+    // Dispose Three.js resources
+    renderer.dispose();
+    scene.clear();
+    
+    // Dispose controls
+    ctrls.dispose();
+  }
+
   // Return the export function along with other methods that may be added later
-  return { exportOBJ };
+  return { exportOBJ, destroy };
 }
