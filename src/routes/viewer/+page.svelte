@@ -12,7 +12,11 @@
 
 	let jsonText = $state('');
 	let chatPrompt = $state('');
-	let promptText = $state();
+	let promptText = $state('');
+	let originalPromptText = $state(); // Store the original for comparison
+	let promptModified = $state(false); // Track if prompt was changed
+	let originalJsonText = $state('');
+let jsonModified = $state(false);
 	let busyMsg = $state('');
 	let jsonError = $state('');
 	let activeTab = $state('prompt');
@@ -67,6 +71,101 @@
 		if (!validateJSON()) return;
 		schema.set(JSON.parse(jsonText)); // viewer restarts via store sub
 	}
+
+	// Function to apply prompt changes
+async function applyPromptChanges() {
+    busyMsg = 'Regenerating from prompt…';
+    
+    try {
+        const response = await fetch('/api/generateJson', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                prompt: promptText.trim(),
+                regenerateFromPrompt: true
+            })
+        });
+        
+        if (!response.ok) throw new Error(await response.text());
+        
+        const newSchema = await response.json();
+        jsonText = JSON.stringify(newSchema, null, 2);
+        originalJsonText = jsonText;
+        spellName = extractSpellName(newSchema);
+        jsonError = '';
+        
+        // Update stores and reset modification flags
+        schema.set(newSchema);
+        generatedPrompt.set(promptText);
+        originalPromptText = promptText;
+        promptModified = false;
+        jsonModified = false;
+        
+    } catch (err) {
+        jsonError = 'Prompt regeneration failed: ' + (err as Error).message;
+    } finally {
+        busyMsg = '';
+    }
+}
+
+async function applyJsonChanges() {
+    if (!validateJSON()) return;
+    
+    busyMsg = 'Applying JSON changes…';
+    
+    try {
+        const parsed = JSON.parse(jsonText);
+        schema.set(parsed);
+        originalJsonText = jsonText;
+        jsonModified = false;
+        spellName = extractSpellName(parsed);
+    } catch (err) {
+        jsonError = (err as Error).message;
+    } finally {
+        busyMsg = '';
+    }
+}
+
+/* Check if there are any pending changes */
+function hasChanges() {
+    return (activeTab === 'prompt' && promptModified) || 
+           (activeTab === 'json' && (jsonModified || !jsonError));
+}
+
+/* Get appropriate button text */
+function getApplyButtonText() {
+    if (busyMsg) return busyMsg;
+    if (activeTab === 'prompt' && promptModified) return '🔄 Apply Prompt Changes';
+    if (activeTab === 'json' && jsonModified) return '⚙️ Apply JSON Changes';
+    return '✨ Apply Changes';
+}
+
+
+// Track prompt changes
+function onPromptChange() {
+    promptModified = promptText !== originalPromptText;
+}
+
+function onJsonChange() {
+    validateJSON();
+    jsonModified = jsonText !== originalJsonText;
+}
+
+
+/* Unified apply function that handles both cases */
+async function applyChanges() {
+    if (busyMsg) return;
+    
+    // Determine what type of change to apply
+    if (activeTab === 'prompt' && promptModified) {
+        return await applyPromptChanges();
+    } else if (activeTab === 'json' && jsonModified) {
+        return await applyJsonChanges();
+    } else if (activeTab === 'json' && !jsonError) {
+        // Fallback: apply JSON even if not tracked as modified
+        return await applyJsonChanges();
+    }
+}
 
 	async function askAI() {
 		if (!chatPrompt.trim()) return;
@@ -158,37 +257,37 @@
 
 		<div class="tab-nav">
         <button 
-            class="tab-btn {activeTab === 'prompt' ? 'active' : ''}"
-            onclick={() => activeTab = 'prompt'}
-        >
-            📝 Prompt
-        </button>
-        <button 
-            class="tab-btn {activeTab === 'json' ? 'active' : ''}"
-            onclick={() => activeTab = 'json'}
-        >
-            ⚙️ JSON
-        </button>
+        class="tab-btn {activeTab === 'prompt' ? 'active' : ''} {promptModified ? 'modified' : ''}"
+        onclick={() => activeTab = 'prompt'}
+    >
+        📝 Prompt
+    </button>
+    <button 
+        class="tab-btn {activeTab === 'json' ? 'active' : ''} {jsonModified ? 'modified' : ''}"
+        onclick={() => activeTab = 'json'}
+    >
+        ⚙️ JSON
+    </button>
     </div>
 
 		<div class="tab-content">
         {#if activeTab === 'prompt'}
-            <textarea
-                class="editor prompt-editor"
-                bind:value={promptText}
-                readonly
-                spellcheck="false"
-                placeholder="The final prompt used to generate this scene will appear here..."
-            ></textarea>
-        {:else}
-            <textarea
-                class="editor"
-                bind:value={jsonText}
-                spellcheck="false"
-                oninput={validateJSON}
-                onkeydown={onJsonKey}
-            ></textarea>
-        {/if}
+        <textarea
+            class="editor prompt-editor"
+            bind:value={promptText}
+            spellcheck="false"
+            oninput={onPromptChange}
+            placeholder="Edit the prompt to regenerate your 3D model..."
+        ></textarea>
+    {:else}
+        <textarea
+            class="editor"
+            bind:value={jsonText}
+            spellcheck="false"
+            oninput={onJsonChange}
+            onkeydown={onJsonKey}
+        ></textarea>
+    {/if}
     </div>
 
     {#if jsonError && activeTab === 'json'}<div class="error-bar">{jsonError}</div>{/if}
@@ -221,13 +320,18 @@
 					</button>
 
 					<button
-						class="apply-btn"
-						onclick={applyManual}
-						disabled={!!jsonError}
-						title="Parse the text above and refresh the 3-D scene"
-					>
-						Apply&nbsp;Manual&nbsp;Fix
-					</button>
+                class="apply-btn {hasChanges() ? 'has-changes' : ''}"
+                onclick={applyChanges}
+                disabled={busyMsg || (activeTab === 'json' && !!jsonError)}
+                title={activeTab === 'prompt' ? 'Regenerate from edited prompt' : 'Apply JSON changes and refresh 3D scene'}
+            >
+                {#if busyMsg && hasChanges()}
+                    <div class="spinner mini"></div>
+                    {getApplyButtonText()}
+                {:else}
+                    {getApplyButtonText()}
+                {/if}
+            </button>
 
 				</div>
 			</div>
@@ -360,6 +464,46 @@
     font-style: italic;
 }
 
+.prompt-editor {
+    background: #fff !important;
+    color: #24292f;
+    border: 1px solid #e1e4e8;
+}
+
+.prompt-actions {
+    padding: 12px 20px;
+    background: #f6f8fa;
+    border-top: 1px solid #e1e4e8;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.apply-btn.has-changes {
+    background: #0000eb;
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.tab-btn {
+    position: relative;
+}
+
+/* Add small indicator for modified tabs */
+.tab-btn.modified::after {
+    content: '●';
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    color: #0000eb;
+    font-size: 8px;
+}
+
+
 
 	.editor {
 		flex: 1;
@@ -458,7 +602,7 @@
 		border: 2px solid #0000eb;
 	}
 	.apply-btn:hover:not(:disabled), .export-fab:hover:not(:disabled) {
-		background: rgba(0, 0, 235, 0.06);
+		background: rgba(0, 0, 235, 0.6);
 		transform: translateY(-1px);
 	}
 	.apply-btn:disabled, .export-fab:disabled {
