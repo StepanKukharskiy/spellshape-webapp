@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import logoText from '$lib/images/spellshape.png';
-	import { schema } from '$lib/store';
+	import { schema, generatedPrompt } from '$lib/store';
 	import { goto } from '$app/navigation';
 	import logo from '$lib/images/spellshape_logo.svg';
 
@@ -72,6 +72,7 @@
 				console.log('Generated schema:', generatedSchema);
 
 				schema.set(generatedSchema);
+				generatedPrompt.set(finalPrompt);
 				goto(`/viewer`);
 
 				return generatedSchema;

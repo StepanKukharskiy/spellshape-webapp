@@ -1,7 +1,7 @@
 <script lang="ts">
 	/* ------------ imports ------------ */
 	import { onMount } from 'svelte';
-	import { schema } from '$lib/store';
+	import { schema, generatedPrompt } from '$lib/store';
 	import { get } from 'svelte/store';
 	import { goto } from '$app/navigation';
 	import logoSrc from '$lib/images/spellshape_logo.svg';
@@ -10,16 +10,18 @@
 	/* ------------ local state ------------ */
 	let canvas: HTMLCanvasElement;
 
-	let jsonText = '';
-	let chatPrompt = '';
-	let busyMsg = '';
-	let jsonError = '';
+	let jsonText = $state('');
+	let chatPrompt = $state('');
+	let promptText = $state();
+	let busyMsg = $state('');
+	let jsonError = $state('');
+	let activeTab = $state('prompt');
 
 	/* file-name shown in the header */
-	let spellName = 'untitled.spell';
+	let spellName = $state('untitled.spell');
 
 	/* ---- sidebar width & drag ---- */
-	let sidebarWidth = 35; // %
+	let sidebarWidth = $state(35); // %
 	let isResizing = false;
 
 	/* ---- 3-D runtime handle ---- */
@@ -118,17 +120,23 @@
 	/* ------------ initial boot ------------ */
 	onMount(() => {
 		const current = get(schema);
+		const currentPrompt = get(generatedPrompt);
 		jsonText = current ? JSON.stringify(current, null, 2) : '{\n  \n}';
 		spellName = extractSpellName(current);
+		promptText = currentPrompt || 'No prompt available';
 		validateJSON();
 
 		startViewer(current); // boot once
-		const unsub = schema.subscribe(startViewer); // hot-reload on change
+		const unsubSchema = schema.subscribe(startViewer);
+        const unsubPrompt = generatedPrompt.subscribe((prompt) => {
+            promptText = prompt || 'No prompt available';
+        });
 
-		return () => {
-			viewer?.dispose?.();
-			unsub();
-		};
+        return () => {
+            viewer?.dispose?.();
+            unsubSchema();
+            unsubPrompt();
+        };
 	});
 </script>
 
@@ -148,17 +156,43 @@
 
 		<div class="file-header">{spellName}</div>
 
-		<textarea
-			class="editor"
-			bind:value={jsonText}
-			spellcheck="false"
-			oninput={validateJSON}
-			onkeydown={onJsonKey}
-		></textarea>
+		<div class="tab-nav">
+        <button 
+            class="tab-btn {activeTab === 'prompt' ? 'active' : ''}"
+            onclick={() => activeTab = 'prompt'}
+        >
+            📝 Prompt
+        </button>
+        <button 
+            class="tab-btn {activeTab === 'json' ? 'active' : ''}"
+            onclick={() => activeTab = 'json'}
+        >
+            ⚙️ JSON
+        </button>
+    </div>
 
-		{#if jsonError}<div class="error-bar">{jsonError}</div>{/if}
+		<div class="tab-content">
+        {#if activeTab === 'prompt'}
+            <textarea
+                class="editor prompt-editor"
+                bind:value={promptText}
+                readonly
+                spellcheck="false"
+                placeholder="The final prompt used to generate this scene will appear here..."
+            ></textarea>
+        {:else}
+            <textarea
+                class="editor"
+                bind:value={jsonText}
+                spellcheck="false"
+                oninput={validateJSON}
+                onkeydown={onJsonKey}
+            ></textarea>
+        {/if}
+    </div>
 
-		<!-- glass-style control card (unchanged) -->
+    {#if jsonError && activeTab === 'json'}<div class="error-bar">{jsonError}</div>{/if}
+
 		<div class="control-card">
 			<textarea
 				class="chat-box"
@@ -277,6 +311,55 @@
 		color: #444;
 		border-bottom: 1px solid #e1e4e8;
 	}
+
+	.tab-nav {
+    display: flex;
+    background: #f6f8fa;
+    border-bottom: 1px solid #e1e4e8;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #656d76;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+    background: rgba(0, 0, 235, 0.04);
+    color: #0000eb;
+}
+
+.tab-btn.active {
+    color: #0000eb;
+    background: #fff;
+    border-bottom-color: #0000eb;
+    font-weight: 600;
+}
+
+.tab-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.prompt-editor {
+    background: #f8f9fa !important;
+    color: #24292f;
+    font-style: italic;
+}
+
+.prompt-editor::placeholder {
+    color: #656d76;
+    font-style: italic;
+}
+
 
 	.editor {
 		flex: 1;
