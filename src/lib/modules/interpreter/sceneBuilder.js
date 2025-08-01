@@ -20,16 +20,35 @@ export function buildSceneFromSchema(schema, scene, {
 
   schema.children.forEach(child=>_build(child,scene,''));
 
+  function _disposeRecursively(object) {
+  if (object.geometry) {
+    object.geometry.dispose();
+  }
+  if (object.material) {
+    if (Array.isArray(object.material)) {
+      object.material.forEach(mat => mat.dispose());
+    } else {
+      object.material.dispose();
+    }
+  }
+  if (object.children) {
+    object.children.forEach(child => _disposeRecursively(child));
+  }
+}
+
   /* ---------- public helpers ---------- */
   function regenerate(path){
-    const entry=objects.get(path); if(!entry) return;
-    evaluator.clearCache();
-    entry.node.clear();
-    entry.node.children.forEach(c=>c.geometry?.dispose());
-    entry.schema.parameters && validator.validateConstraints(entry);
-    processor.process(entry.schema.template,entry.schema.parameters,entry.schema.expressions)
-             .forEach(n=>_build(n,entry.node,path));
-  }
+  const entry=objects.get(path); if(!entry) return;
+  evaluator.clearCache();
+  
+  // Properly dispose all resources
+  _disposeRecursively(entry.node);
+  
+  entry.node.clear();
+  entry.schema.parameters && validator.validateConstraints(entry);
+  processor.process(entry.schema.template,entry.schema.parameters,entry.schema.expressions)
+           .forEach(n=>_build(n,entry.node,path));
+}
 
   return {registry,objects,regenerate};
 
