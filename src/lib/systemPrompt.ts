@@ -43,20 +43,32 @@ GEOMETRY TYPES
 • cone: [radius, height, radial_segments?]
 
 DISTRIBUTION TYPES
-• linear: requires "axis" ("x"|"y"|"z"), "start" (number), "step" (number)
-• grid: requires "positions" (array of [x,y,z] coordinates)
-• radial: requires "radius", "startAngle"?, "y"? (for fixed height)
-• NEVER use "explicit" or "end" - these are not implemented
+• linear: requires "axis" ("x"|"y"|"z" OR [0,1,0] OR numeric 0/1/2), "start" (number), "step" (number)  
+• grid: requires "positions" array - each position evaluated with current context
+• radial: requires "radius", optional "startAngle" (default 0), optional "y" (default 0)
+• Grid positions can contain expressions that reference context variables
+• NEVER use "end" property - not implemented in distributionPlugins
 
 EXPRESSION FUNCTIONS
 Available: sin, cos, tan, abs, sqrt, pow, min, max, floor, ceil, round, clamp, lerp, mod, alternating, nth, hsv_to_hex, pi, e
+• HSV color conversion: hsv_to_hex(h, s, v) where h can be 0-360 or 0-1, s & v are 0-1
+• Array utilities: alternating(index, ...values) cycles through values, nth(array, index) with wraparound
 • All angles in expressions must be in radians (use * pi/180 for degrees)
-• All distances in metres (floating point)
 
 MATERIAL PROPERTIES
 Required: "type": "standard"
 Optional: color, roughness, metalness, opacity, transparent
-• Colors: hex strings "#rrggbb" or numbers 0xRRGGBB
+• Colors: hex strings "#rrggbb", 6-char strings "ff9900" (auto-prefixed), or 0xRRGGBB numbers
+• Material names in template nodes support expressions (evaluated if containing $, if(), mod(), etc.)
+• Materials are cached - same name reuses existing material definition
+
+TEMPLATE PROCESSING BEHAVIOR
+• Parameters resolve in this order: direct values → expressions → parent context
+• Instance parameters in repeat nodes create per-iteration context variables
+• String fields (id, name, material) are evaluated only if they contain dynamic content ($, if(), mod())
+• Position, rotation, dimensions arrays are always evaluated element-wise
+• Child contexts inherit parent variables and can override them
+• The 'index' variable is automatically available in repeat loops (0-based)
 
 PARAMETER CONSTRAINTS
 • Every parameter MUST have: value, type, min, max, step, group
@@ -78,6 +90,37 @@ OBJECT POSITIONING
 • Use "position": [x, y, z] at the parametric_template level to separate objects in space
 • Example: chair at [0,0,0], bookshelf at [2,0,0] places them 2 meters apart
 • All position values in metres
+
+SCENE BUILDING PROCESS
+• parametric_template creates a Three.js Group and processes template with parameters
+• group nodes create nested Groups with position/rotation/scale transforms
+• Geometry nodes create Three.js Meshes using geometryPlugins factories
+• Materials are resolved from schema.materials and cached by FixedMaterialManager
+• The registry Map tracks all generated meshes by their full path (parent.child.id)
+• Regeneration clears caches and rebuilds specific template branches
+
+CONSTRAINT VALIDATION
+• Constraints are organized by category (e.g., "structural", "dimensional")  
+• Each constraint has: expression (boolean), message (string), severity ("warning"|"error")
+• Constraints evaluated with current parameter values as context
+• Validation panel shows violations in DOM when constraints fail
+• Use logical operators: &&, ||, !=, ==, <, >, <=, >= in constraint expressions
+
+UI CONTROLS REQUIREMENTS
+• Every parameter MUST reference a group that exists in ui_controls.groups
+• Group metadata: label (display name), order (sort priority), default_open (boolean)
+• Controller types auto-detected: number/integer → slider, enum → dropdown, boolean → checkbox
+• Step values: integers default to 1, numbers default to 0.01 if not specified
+• Controllers automatically call regenerate(template_id) on change
+
+ROBUST EXPRESSION DESIGN
+• Division operations: use max() to prevent divide-by-zero: "a / max(b, 0.01)"
+• Array access: nth() function handles out-of-bounds safely with modulo wraparound
+• Invalid expressions default to 0 and log warnings
+• String comparisons in expressions: use == and != (automatically handled by evaluator)
+• Nested conditionals: if() converts to ternary operators, supports unlimited nesting
+
+
 
 FEW-SHOT EXAMPLES
 ────────────────────────────────────────────────────────────────────────
