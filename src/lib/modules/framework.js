@@ -125,24 +125,47 @@ export function start(canvas, schema){
 
   /* Cleanup function */
   function destroy() {
-    // Cancel animation loop
-    if (animationId) {
-      cancelAnimationFrame(animationId);
-    }
-
-    // Remove event listeners
-    window.removeEventListener('resize', handleResize);
-
-    // Destroy GUI
-    destroyGUI();
-
-    // Dispose Three.js resources
-    renderer.dispose();
-    scene.clear();
-    
-    // Dispose controls
-    ctrls.dispose();
+  // Cancel animation loop properly
+  if (typeof animate !== 'undefined') {
+    const animationId = requestAnimationFrame(animate);
+    cancelAnimationFrame(animationId);
   }
+
+  // Remove event listeners
+  window.removeEventListener('resize', handleResize);
+
+  // Destroy GUI
+  destroyGUI();
+
+  // Dispose scene resources recursively
+  scene.traverse((object) => {
+    if (object.geometry) {
+      object.geometry.dispose();
+    }
+    if (object.material) {
+      if (Array.isArray(object.material)) {
+        object.material.forEach(mat => mat.dispose());
+      } else {
+        object.material.dispose();
+      }
+    }
+  });
+
+  // Clear scene
+  scene.clear();
+  
+  // Dispose renderer
+  renderer.dispose();
+  
+  // Dispose controls
+  ctrls.dispose();
+
+  // Clear any remaining references
+  if (typeof materialManager !== 'undefined' && materialManager.clearUnusedMaterials) {
+    materialManager.clearUnusedMaterials();
+  }
+}
+
 
   // Return the export function along with other methods that may be added later
   return { exportOBJ, destroy };
