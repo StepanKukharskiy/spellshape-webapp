@@ -21,6 +21,19 @@
     });
 });
 
+async function savePromtsAndSpells(prompt='', spell:any){
+	await fetch(`${page.url.origin}/api/savePromptAndSpell`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						prompt: prompt,
+						spell: spell
+					})
+				});
+}
+
 	async function handleSubmit() {
 		if (!user) {
 			goto('/user/signin');
@@ -78,6 +91,7 @@
 
 				const generatedSchema = await schemaResponse.json();
 				console.log('Generated schema:', generatedSchema);
+				await savePromtsAndSpells(finalPrompt, generatedSchema)
 
 				schema.set(generatedSchema);
 				generatedPrompt.set(finalPrompt);

@@ -67,6 +67,7 @@ export async function POST({ request }) {
             max_tokens: 400
         });
 
+
         return new Response(JSON.stringify({
             prompt: response.choices[0].message.content
         }), {
