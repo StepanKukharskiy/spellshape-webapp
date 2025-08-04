@@ -6,6 +6,7 @@
 	import { goto } from '$app/navigation';
 	import logoSrc from '$lib/images/spellshape_logo.svg';
 	import logoText from '$lib/images/spellshape_text_logo.svg';
+	import { exportSpellToGrasshopper } from '$lib/modules/ghxExporter';
 
 	/* ------------ local state ------------ */
 	let canvas: HTMLCanvasElement;
@@ -16,9 +17,10 @@
 	let originalPromptText = $state(); // Store the original for comparison
 	let promptModified = $state(false); // Track if prompt was changed
 	let originalJsonText = $state('');
-let jsonModified = $state(false);
-	let busyChatting = $state(false);  // For Ask AI button  
-let busyApplying = $state(false);  // For Apply Changes button
+	let jsonModified = $state(false);
+	let busyChatting = $state(false); // For Ask AI button
+	let busyApplying = $state(false); // For Apply Changes button
+	let busyExporting = $state(false); // For GHX export
 	let jsonError = $state('');
 	let activeTab = $state('prompt');
 
@@ -47,14 +49,31 @@ let busyApplying = $state(false);  // For Apply Changes button
 		viewer = await start(canvas, data);
 	}
 
-	// Export function
-    function exportScene(filename = '') {
-        if (viewer?.exportOBJ) {
-            viewer.exportOBJ(filename);
-        } else {
-            console.warn('Export functionality not available');
-        }
-    }
+	// Export function for OBJ
+	function exportScene(filename = '') {
+		if (viewer?.exportOBJ) {
+			viewer.exportOBJ(filename);
+		} else {
+			console.warn('Export functionality not available');
+		}
+	}
+
+	// Export function for GHX
+	async function exportGrasshopper() {
+		if (busyExporting || !jsonText.trim()) return;
+
+		busyExporting = true;
+		try {
+			const spellData = JSON.parse(jsonText);
+			const filename = spellName.replace('.spell', '.ghx');
+			await exportSpellToGrasshopper(spellData, filename);
+		} catch (err) {
+			console.error('Failed to export Grasshopper file:', err);
+			jsonError = 'GHX export failed: ' + (err as Error).message;
+		} finally {
+			busyExporting = false;
+		}
+	}
 
 	function validateJSON() {
 		try {
@@ -74,124 +93,120 @@ let busyApplying = $state(false);  // For Apply Changes button
 	}
 
 	// Function to apply prompt changes
-async function applyPromptChanges() {
-    try {
-        const response = await fetch('/api/generateJson', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-                prompt: promptText.trim(),
-                regenerateFromPrompt: true
-            })
-        });
-        
-        if (!response.ok) throw new Error(await response.text());
-        
-        const newSchema = await response.json();
-        jsonText = JSON.stringify(newSchema, null, 2);
-        originalJsonText = jsonText;
-        spellName = extractSpellName(newSchema);
-        jsonError = '';
-        
-        // Update stores and reset modification flags
-        schema.set(newSchema);
-        generatedPrompt.set(promptText);
-        originalPromptText = promptText;
-        promptModified = false;
-        jsonModified = false;
-        
-    } catch (err) {
-        jsonError = 'Prompt regeneration failed: ' + (err as Error).message;
-    }
-}
+	async function applyPromptChanges() {
+		try {
+			const response = await fetch('/api/generateJson', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					prompt: promptText.trim(),
+					regenerateFromPrompt: true
+				})
+			});
 
-async function applyJsonChanges() {
-    if (!validateJSON()) return;
-    
-    try {
-        const parsed = JSON.parse(jsonText);
-        schema.set(parsed);
-        originalJsonText = jsonText;
-        jsonModified = false;
-        spellName = extractSpellName(parsed);
-    } catch (err) {
-        jsonError = (err as Error).message;
-    }
-}
+			if (!response.ok) throw new Error(await response.text());
 
-/* Check if there are any pending changes */
-function hasChanges() {
-    return (activeTab === 'prompt' && promptModified) || 
-           (activeTab === 'json' && (jsonModified || !jsonError));
-}
+			const newSchema = await response.json();
+			jsonText = JSON.stringify(newSchema, null, 2);
+			originalJsonText = jsonText;
+			spellName = extractSpellName(newSchema);
+			jsonError = '';
 
-/* Get appropriate button text */
-function getApplyButtonText() {
-    if (activeTab === 'prompt' && promptModified) return '🔄 Apply Prompt Changes';
-    if (activeTab === 'json' && jsonModified) return '⚙️ Apply JSON Changes';
-    return '✨ Apply Changes';
-}
+			// Update stores and reset modification flags
+			schema.set(newSchema);
+			generatedPrompt.set(promptText);
+			originalPromptText = promptText;
+			promptModified = false;
+			jsonModified = false;
+		} catch (err) {
+			jsonError = 'Prompt regeneration failed: ' + (err as Error).message;
+		}
+	}
 
+	async function applyJsonChanges() {
+		if (!validateJSON()) return;
 
+		try {
+			const parsed = JSON.parse(jsonText);
+			schema.set(parsed);
+			originalJsonText = jsonText;
+			jsonModified = false;
+			spellName = extractSpellName(parsed);
+		} catch (err) {
+			jsonError = (err as Error).message;
+		}
+	}
 
-// Track prompt changes
-function onPromptChange() {
-    promptModified = promptText !== originalPromptText;
-}
+	/* Check if there are any pending changes */
+	function hasChanges() {
+		return (
+			(activeTab === 'prompt' && promptModified) ||
+			(activeTab === 'json' && (jsonModified || !jsonError))
+		);
+	}
 
-function onJsonChange() {
-    validateJSON();
-    jsonModified = jsonText !== originalJsonText;
-}
+	/* Get appropriate button text */
+	function getApplyButtonText() {
+		if (activeTab === 'prompt' && promptModified) return '🔄 Apply Prompt Changes';
+		if (activeTab === 'json' && jsonModified) return '⚙️ Apply JSON Changes';
+		return '✨ Apply Changes';
+	}
 
+	// Track prompt changes
+	function onPromptChange() {
+		promptModified = promptText !== originalPromptText;
+	}
 
-/* Unified apply function that handles both cases */
-async function applyChanges() {
-    if (busyChatting || busyApplying) return;
-    busyApplying = true;
-    
-    try {
-        if (activeTab === 'prompt' && promptModified) {
-            await applyPromptChanges();
-        } else if (activeTab === 'json' && jsonModified) {
-            await applyJsonChanges();
-        } else if (activeTab === 'json' && !jsonError) {
-            await applyJsonChanges();
-        }
-    } finally {
-        busyApplying = false;
-    }
-}
+	function onJsonChange() {
+		validateJSON();
+		jsonModified = jsonText !== originalJsonText;
+	}
 
+	/* Unified apply function that handles both cases */
+	async function applyChanges() {
+		if (busyChatting || busyApplying) return;
+		busyApplying = true;
+
+		try {
+			if (activeTab === 'prompt' && promptModified) {
+				await applyPromptChanges();
+			} else if (activeTab === 'json' && jsonModified) {
+				await applyJsonChanges();
+			} else if (activeTab === 'json' && !jsonError) {
+				await applyJsonChanges();
+			}
+		} finally {
+			busyApplying = false;
+		}
+	}
 
 	async function askAI() {
-    if (!chatPrompt.trim() || busyChatting || busyApplying) return;
-    busyChatting = true;
+		if (!chatPrompt.trim() || busyChatting || busyApplying) return;
+		busyChatting = true;
 
-    try {
-        const r = await fetch('/api/generateJson', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-                prompt: chatPrompt,
-                schema: JSON.parse(jsonText)
-            })
-        });
-        if (!r.ok) throw new Error(await r.text());
+		try {
+			const r = await fetch('/api/generateJson', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					prompt: chatPrompt,
+					schema: JSON.parse(jsonText)
+				})
+			});
+			if (!r.ok) throw new Error(await r.text());
 
-        const newSchema = await r.json();
-        jsonText = JSON.stringify(newSchema, null, 2);
-        spellName = extractSpellName(newSchema);
-        jsonError = '';
-        chatPrompt = '';
-        schema.set(newSchema);
-    } catch (err) {
-        jsonError = 'AI request failed: ' + (err as Error).message;
-    } finally {
-        busyChatting = false;
-    }
-}
-
+			const newSchema = await r.json();
+			jsonText = JSON.stringify(newSchema, null, 2);
+			spellName = extractSpellName(newSchema);
+			jsonError = '';
+			chatPrompt = '';
+			schema.set(newSchema);
+		} catch (err) {
+			jsonError = 'AI request failed: ' + (err as Error).message;
+		} finally {
+			busyChatting = false;
+		}
+	}
 
 	/* ---- resize handlers ---- */
 	function startResize(e: MouseEvent) {
@@ -225,15 +240,15 @@ async function applyChanges() {
 
 		startViewer(current); // boot once
 		const unsubSchema = schema.subscribe(startViewer);
-        const unsubPrompt = generatedPrompt.subscribe((prompt) => {
-            promptText = prompt || 'No prompt available';
-        });
+		const unsubPrompt = generatedPrompt.subscribe((prompt) => {
+			promptText = prompt || 'No prompt available';
+		});
 
-        return () => {
-            viewer?.destroy?.();
-            unsubSchema();
-            unsubPrompt();
-        };
+		return () => {
+			viewer?.destroy?.();
+			unsubSchema();
+			unsubPrompt();
+		};
 	});
 </script>
 
@@ -254,41 +269,41 @@ async function applyChanges() {
 		<div class="file-header">{spellName}</div>
 
 		<div class="tab-nav">
-        <button 
-        class="tab-btn {activeTab === 'prompt' ? 'active' : ''} {promptModified ? 'modified' : ''}"
-        onclick={() => activeTab = 'prompt'}
-    >
-        📝 Prompt
-    </button>
-    <button 
-        class="tab-btn {activeTab === 'json' ? 'active' : ''} {jsonModified ? 'modified' : ''}"
-        onclick={() => activeTab = 'json'}
-    >
-        ⚙️ JSON
-    </button>
-    </div>
+			<button
+				class="tab-btn {activeTab === 'prompt' ? 'active' : ''} {promptModified ? 'modified' : ''}"
+				onclick={() => (activeTab = 'prompt')}
+			>
+				📝 Prompt
+			</button>
+			<button
+				class="tab-btn {activeTab === 'json' ? 'active' : ''} {jsonModified ? 'modified' : ''}"
+				onclick={() => (activeTab = 'json')}
+			>
+				⚙️ JSON
+			</button>
+		</div>
 
 		<div class="tab-content">
-        {#if activeTab === 'prompt'}
-        <textarea
-            class="editor prompt-editor"
-            bind:value={promptText}
-            spellcheck="false"
-            oninput={onPromptChange}
-            placeholder="Edit the prompt to regenerate your 3D model..."
-        ></textarea>
-    {:else}
-        <textarea
-            class="editor"
-            bind:value={jsonText}
-            spellcheck="false"
-            oninput={onJsonChange}
-            onkeydown={onJsonKey}
-        ></textarea>
-    {/if}
-    </div>
+			{#if activeTab === 'prompt'}
+				<textarea
+					class="editor prompt-editor"
+					bind:value={promptText}
+					spellcheck="false"
+					oninput={onPromptChange}
+					placeholder="Edit the prompt to regenerate your 3D model..."
+				></textarea>
+			{:else}
+				<textarea
+					class="editor"
+					bind:value={jsonText}
+					spellcheck="false"
+					oninput={onJsonChange}
+					onkeydown={onJsonKey}
+				></textarea>
+			{/if}
+		</div>
 
-    {#if jsonError && activeTab === 'json'}<div class="error-bar">{jsonError}</div>{/if}
+		{#if jsonError && activeTab === 'json'}<div class="error-bar">{jsonError}</div>{/if}
 
 		<div class="control-card">
 			<textarea
@@ -303,37 +318,45 @@ async function applyChanges() {
 				<div class="hint"><kbd>Shift</kbd>+<kbd>Enter</kbd> new line • <kbd>Enter</kbd> send</div>
 				<div style="display: flex; width: 100%; justify-content: start; gap: 10px;">
 					<!-- Ask AI Button -->
-    <button 
-        class="generate-btn" 
-        onclick={askAI} 
-        disabled={!chatPrompt.trim() || busyChatting || busyApplying}
-    >
-        {#if busyChatting}
-            <div class="spinner mini"></div>
-            Thinking…
-        {:else}
-            <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-            Ask&nbsp;AI
-        {/if}
-    </button>
+					<button
+						class="generate-btn"
+						onclick={askAI}
+						disabled={!chatPrompt.trim() || busyChatting || busyApplying}
+					>
+						{#if busyChatting}
+							<div class="spinner mini"></div>
+							Thinking…
+						{:else}
+							<svg
+								width="16"
+								height="16"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								fill="none"
+								stroke-width="2"
+							>
+								<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+							</svg>
+							Ask&nbsp;AI
+						{/if}
+					</button>
 
-    <!-- Apply Changes Button -->
-    <button
-        class="apply-btn {hasChanges() ? 'has-changes' : ''}"
-        onclick={applyChanges}
-        disabled={busyChatting || busyApplying || (activeTab === 'json' && !!jsonError)}
-        title={activeTab === 'prompt' ? 'Regenerate from edited prompt' : 'Apply JSON changes and refresh 3D scene'}
-    >
-        {#if busyApplying}
-            <div class="spinner mini"></div>
-            Working…
-        {:else}
-            {getApplyButtonText()}
-        {/if}
-    </button>
-
+					<!-- Apply Changes Button -->
+					<button
+						class="apply-btn {hasChanges() ? 'has-changes' : ''}"
+						onclick={applyChanges}
+						disabled={busyChatting || busyApplying || (activeTab === 'json' && !!jsonError)}
+						title={activeTab === 'prompt'
+							? 'Regenerate from edited prompt'
+							: 'Apply JSON changes and refresh 3D scene'}
+					>
+						{#if busyApplying}
+							<div class="spinner mini"></div>
+							Working…
+						{:else}
+							{getApplyButtonText()}
+						{/if}
+					</button>
 				</div>
 			</div>
 		</div>
@@ -344,13 +367,56 @@ async function applyChanges() {
 	<!-- ───── 3-D viewer ───── -->
 	<canvas bind:this={canvas}></canvas>
 
-	<button class="export-fab" onclick={()=>{exportScene(spellName)}} title="Export 3-D scene">
-  <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7,10 12,15 17,10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg> OBJ
-</button>
+	<!-- Export Buttons -->
+	<div class="export-buttons">
+		<button
+			class="export-fab"
+			onclick={() => {
+				exportScene(spellName);
+			}}
+			title="Export 3D scene as OBJ"
+		>
+			<svg
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				fill="none"
+				stroke-width="2"
+			>
+				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+				<polyline points="7,10 12,15 17,10" />
+				<line x1="12" y1="15" x2="12" y2="3" />
+			</svg>
+			OBJ
+		</button>
+
+		<button
+			class="export-fab"
+			onclick={exportGrasshopper}
+			disabled={busyExporting || !jsonText.trim() || !!jsonError}
+			title="Export as Grasshopper definition"
+		>
+			{#if busyExporting}
+				<div class="spinner mini"></div>
+				Exporting…
+			{:else}
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+					fill="none"
+					stroke-width="2"
+				>
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+					<polyline points="7,10 12,15 17,10" />
+					<line x1="12" y1="15" x2="12" y2="3" />
+				</svg>
+				GHX
+			{/if}
+		</button>
+	</div>
 </div>
 
 <style>
@@ -418,93 +484,96 @@ async function applyChanges() {
 	}
 
 	.tab-nav {
-    display: flex;
-    background: #f6f8fa;
-    border-bottom: 1px solid #e1e4e8;
-}
+		display: flex;
+		background: #f6f8fa;
+		border-bottom: 1px solid #e1e4e8;
+	}
 
-.tab-btn {
-    flex: 1;
-    padding: 10px 16px;
-    background: transparent;
-    border: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #656d76;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border-bottom: 2px solid transparent;
-}
+	.tab-btn {
+		flex: 1;
+		padding: 10px 16px;
+		background: transparent;
+		border: none;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: #656d76;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		border-bottom: 2px solid transparent;
+	}
 
-.tab-btn:hover {
-    background: rgba(0, 0, 235, 0.04);
-    color: #0000eb;
-}
+	.tab-btn:hover {
+		background: rgba(0, 0, 235, 0.04);
+		color: #0000eb;
+	}
 
-.tab-btn.active {
-    color: #0000eb;
-    background: #fff;
-    border-bottom-color: #0000eb;
-    font-weight: 600;
-}
+	.tab-btn.active {
+		color: #0000eb;
+		background: #fff;
+		border-bottom-color: #0000eb;
+		font-weight: 600;
+	}
 
-.tab-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
+	.tab-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+	}
 
-.prompt-editor {
-    background: #f8f9fa !important;
-    color: #24292f;
-    font-style: italic;
-}
+	.prompt-editor {
+		background: #f8f9fa !important;
+		color: #24292f;
+		font-style: italic;
+	}
 
-.prompt-editor::placeholder {
-    color: #656d76;
-    font-style: italic;
-}
+	.prompt-editor::placeholder {
+		color: #656d76;
+		font-style: italic;
+	}
 
-.prompt-editor {
-    background: #fff !important;
-    color: #24292f;
-    border: 1px solid #e1e4e8;
-}
+	.prompt-editor {
+		background: #fff !important;
+		color: #24292f;
+		border: 1px solid #e1e4e8;
+	}
 
-.prompt-actions {
-    padding: 12px 20px;
-    background: #f6f8fa;
-    border-top: 1px solid #e1e4e8;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-.apply-btn.has-changes {
-    background: #0000eb;
-    color: white;
-    animation: pulse 2s infinite;
-}
+	.prompt-actions {
+		padding: 12px 20px;
+		background: #f6f8fa;
+		border-top: 1px solid #e1e4e8;
+		display: flex;
+		gap: 10px;
+		align-items: center;
+	}
+	.apply-btn.has-changes {
+		background: #0000eb;
+		color: white;
+		animation: pulse 2s infinite;
+	}
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-}
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.7;
+		}
+	}
 
-.tab-btn {
-    position: relative;
-}
+	.tab-btn {
+		position: relative;
+	}
 
-/* Add small indicator for modified tabs */
-.tab-btn.modified::after {
-    content: '●';
-    position: absolute;
-    top: 5px;
-    right: 8px;
-    color: #0000eb;
-    font-size: 8px;
-}
-
-
+	/* Add small indicator for modified tabs */
+	.tab-btn.modified::after {
+		content: '●';
+		position: absolute;
+		top: 5px;
+		right: 8px;
+		color: #0000eb;
+		font-size: 8px;
+	}
 
 	.editor {
 		flex: 1;
@@ -568,7 +637,7 @@ async function applyChanges() {
 	}
 
 	.generate-btn,
-	.apply-btn, 
+	.apply-btn,
 	.export-fab {
 		display: flex;
 		align-items: center;
@@ -596,17 +665,20 @@ async function applyChanges() {
 		transform: none;
 	}
 
-	.apply-btn, .export-fab {
+	.apply-btn,
+	.export-fab {
 		justify-content: center;
 		background: transparent;
 		color: #0000eb;
 		border: 2px solid #0000eb;
 	}
-	.apply-btn:hover:not(:disabled), .export-fab:hover:not(:disabled) {
+	.apply-btn:hover:not(:disabled),
+	.export-fab:hover:not(:disabled) {
 		background: rgba(0, 0, 235, 0.6);
 		transform: translateY(-1px);
 	}
-	.apply-btn:disabled, .export-fab:disabled {
+	.apply-btn:disabled,
+	.export-fab:disabled {
 		opacity: 0.4;
 		cursor: not-allowed;
 	}
@@ -647,22 +719,52 @@ async function applyChanges() {
 		background: #24292f;
 	}
 
+	/* Export buttons container */
+	.export-buttons {
+		position: fixed;
+		right: 24px;
+		bottom: 24px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
 	.export-fab {
-  position: fixed;           /* stays put during scrolling */
-  right: 24px;               /* bottom-right corner */
-  bottom: 24px;
-  padding: 0.7rem 1.2rem;
-  font-weight: 600;
-  color: #fff;
-  cursor: pointer;
-  justify-content: center;
+		padding: 0.7rem 1.2rem;
+		font-weight: 600;
+		cursor: pointer;
+		justify-content: center;
 		background: transparent;
 		color: #0000eb;
 		border: 2px solid #0000eb;
-  transition: transform 0.15s ease;
-}
-.export-fab:hover   { transform: translateY(-2px); }
-.export-fab:active  { transform: translateY( 0 ); }
+		transition: transform 0.15s ease;
+		min-width: 80px;
+	}
+
+	.export-fab:hover:not(:disabled) {
+		transform: translateY(-2px);
+		background: rgba(0, 0, 235, 0.1);
+	}
+	.export-fab:active:not(:disabled) {
+		transform: translateY(0);
+	}
+
+	.ghx-export {
+		background: #228b22;
+		color: white;
+		border-color: #228b22;
+	}
+
+	.ghx-export:hover:not(:disabled) {
+		background: #32cd32;
+		border-color: #32cd32;
+	}
+
+	.ghx-export:disabled {
+		background: #cccccc;
+		border-color: #cccccc;
+		color: #666666;
+	}
 
 	@media (max-width: 640px) {
 		.sidebar {
@@ -674,6 +776,14 @@ async function applyChanges() {
 		.footer-row {
 			flex-direction: column;
 			align-items: stretch;
+		}
+		.export-buttons {
+			right: 12px;
+			bottom: 12px;
+		}
+		.export-fab {
+			padding: 0.5rem 1rem;
+			font-size: 0.85rem;
 		}
 	}
 </style>
