@@ -14,11 +14,15 @@ export function start(canvas, schema) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.2;
+  renderer.autoClear = false;
 
   const scene = new THREE.Scene(); scene.background = new THREE.Color('#f8f9fa');
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.set(4, 3, 6);
   const ctrls = new OrbitControls(camera, renderer.domElement);
+
+  // Create axis widget
+  const axisWidget = createAxisWidget(camera, renderer);
 
   /* Lights / ground (same as original) */
   // Key Light (Main directional light from front-top-right)
@@ -111,50 +115,68 @@ export function start(canvas, schema) {
   }
 
   function fitCameraToScene(camera, scene, controls, offset = 1.25) {
-  // Create a temporary group to hold only the objects we want to consider
-  const tempGroup = new THREE.Group();
-  
-  scene.traverse((object) => {
-    // Skip objects with ShadowMaterial (your ground plane)
-    if (object.isMesh && object.material instanceof THREE.ShadowMaterial) {
+    // Create a temporary group to hold only the objects we want to consider
+    const tempGroup = new THREE.Group();
+
+    scene.traverse((object) => {
+      // Skip objects with ShadowMaterial (your ground plane)
+      if (object.isMesh && object.material instanceof THREE.ShadowMaterial) {
+        return;
+      }
+
+      // Only consider visible meshes
+      if (object.isMesh && object.visible) {
+        tempGroup.add(object.clone());
+      }
+    });
+
+    // Create bounding box from filtered objects
+    const boundingBox = new THREE.Box3();
+    boundingBox.setFromObject(tempGroup);
+
+    if (boundingBox.isEmpty()) {
+      console.warn('Scene bounding box is empty');
       return;
     }
-    
-    // Only consider visible meshes
-    if (object.isMesh && object.visible) {
-      tempGroup.add(object.clone());
+
+    const center = boundingBox.getCenter(new THREE.Vector3());
+    const size = boundingBox.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+
+    const fov = camera.fov * (Math.PI / 180);
+    const distance = Math.abs(maxDim / (2 * Math.tan(fov / 2))) * offset;
+
+    const direction = camera.position.clone().sub(center).normalize();
+    camera.position.copy(center).add(direction.multiplyScalar(distance));
+    camera.lookAt(center);
+
+    if (controls) {
+      controls.target.copy(center);
+      controls.update();
     }
-  });
-  
-  // Create bounding box from filtered objects
-  const boundingBox = new THREE.Box3();
-  boundingBox.setFromObject(tempGroup);
-  
-  if (boundingBox.isEmpty()) {
-    console.warn('Scene bounding box is empty');
-    return;
+
+    camera.near = distance / 100;
+    camera.far = distance * 100;
+    camera.updateProjectionMatrix();
   }
-  
-  const center = boundingBox.getCenter(new THREE.Vector3());
-  const size = boundingBox.getSize(new THREE.Vector3());
-  const maxDim = Math.max(size.x, size.y, size.z);
-  
-  const fov = camera.fov * (Math.PI / 180);
-  const distance = Math.abs(maxDim / (2 * Math.tan(fov / 2))) * offset;
-  
-  const direction = camera.position.clone().sub(center).normalize();
-  camera.position.copy(center).add(direction.multiplyScalar(distance));
-  camera.lookAt(center);
-  
-  if (controls) {
-    controls.target.copy(center);
-    controls.update();
-  }
-  
-  camera.near = distance / 100;
-  camera.far = distance * 100;
-  camera.updateProjectionMatrix();
+
+  function createAxisWidget(mainCamera, renderer) {
+  // Simple axis widget: only axes, no text
+  const axisScene = new THREE.Scene();
+  const axisCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+  axisCamera.position.set(3, 3, 3);
+
+  const axisHelper = new THREE.AxesHelper(1);
+  axisScene.add(axisHelper);
+
+  return {
+    scene: axisScene,
+    camera: axisCamera,
+    helper: axisHelper
+  };
 }
+
+
 
 
   /* Responsive */
@@ -167,6 +189,25 @@ export function start(canvas, schema) {
   (function animate() {
     requestAnimationFrame(animate);
     ctrls.update(); renderer.render(scene, camera);
+    // Sync axis widget rotation with main camera
+    axisWidget.camera.position.copy(camera.position);
+    axisWidget.camera.position.sub(ctrls.target);
+    axisWidget.camera.position.normalize();
+    axisWidget.camera.position.multiplyScalar(5);
+    axisWidget.camera.lookAt(0, 0, 0);
+    
+    // Clear and render main scene
+    renderer.clear();
+    renderer.render(scene, camera);
+    
+    // Render axis widget in lower left corner
+    const size = Math.min(window.innerWidth, window.innerHeight) * 0.15; // 15% of smallest dimension
+    renderer.setViewport(10, 10, size, size); // 10px margin from bottom-left
+    renderer.render(axisWidget.scene, axisWidget.camera);
+    
+    // Reset viewport for next frame
+    renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+
   })();
 
   /* Cleanup function */
