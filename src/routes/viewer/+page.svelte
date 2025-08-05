@@ -47,6 +47,15 @@
 		if (viewer?.dispose) viewer.dispose?.();
 		const { start } = await import('$lib/modules/framework.js');
 		viewer = await start(canvas, data);
+		if (viewer?.fitToScene) {
+			viewer.fitToScene();
+		}
+	}
+
+	function fitToView() {
+		if (viewer?.fitToScene) {
+			viewer.fitToScene();
+		}
 	}
 
 	// Export function for OBJ
@@ -369,6 +378,21 @@
 
 	<!-- Export Buttons -->
 	<div class="export-buttons">
+		<button class="export-fab" onclick={fitToView} title="Fit camera to show all objects">
+			<svg
+				width="16"
+				height="16"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				fill="none"
+				stroke-width="2"
+			>
+				<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+				<circle cx="9" cy="9" r="2" />
+				<path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+			</svg>
+			Fit
+		</button>
 		<button
 			class="export-fab"
 			onclick={() => {
