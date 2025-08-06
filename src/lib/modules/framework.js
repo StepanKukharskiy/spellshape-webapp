@@ -176,6 +176,58 @@ export function start(canvas, schema) {
   };
 }
 
+function setView(viewName) {
+    const boundingBox = new THREE.Box3();
+    const tempGroup = new THREE.Group();
+    
+    scene.traverse((object) => {
+        if (object.isMesh && object.visible && !(object.material instanceof THREE.ShadowMaterial)) {
+            tempGroup.add(object.clone());
+        }
+    });
+    
+    boundingBox.setFromObject(tempGroup);
+    
+    if (boundingBox.isEmpty()) {
+        console.warn('Scene bounding box is empty');
+        return;
+    }
+    
+    const center = boundingBox.getCenter(new THREE.Vector3());
+    const size = boundingBox.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const distance = maxDim * 2;
+    
+    let newPosition;
+    switch(viewName) {
+        case 'top':
+            newPosition = new THREE.Vector3(center.x, center.y + distance, center.z);
+            break;
+        case 'bottom':
+            newPosition = new THREE.Vector3(center.x, center.y - distance, center.z);
+            break;
+        case 'front':
+            newPosition = new THREE.Vector3(center.x, center.y, center.z + distance);
+            break;
+        case 'back':
+            newPosition = new THREE.Vector3(center.x, center.y, center.z - distance);
+            break;
+        case 'left':
+            newPosition = new THREE.Vector3(center.x - distance, center.y, center.z);
+            break;
+        case 'right':
+            newPosition = new THREE.Vector3(center.x + distance, center.y, center.z);
+            break;
+        default:
+            return;
+    }
+    
+    camera.position.copy(newPosition);
+    camera.lookAt(center);
+    ctrls.target.copy(center);
+    ctrls.update();
+}
+
 
 
 
@@ -255,5 +307,5 @@ export function start(canvas, schema) {
 
 
   // Return the export function along with other methods that may be added later
-  return { exportOBJ, destroy, fitToScene: () => fitCameraToScene(camera, scene, ctrls) };
+  return { exportOBJ, destroy, fitToScene: () => fitCameraToScene(camera, scene, ctrls), setView };
 }

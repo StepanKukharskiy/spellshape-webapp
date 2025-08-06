@@ -230,11 +230,61 @@
 		isResizing = false;
 	}
 
-	/* ---- keyboard shortcut ---- */
+	/* ---- keyboard shortcuts ---- */
+	function handleKeyboardShortcuts(e: KeyboardEvent) {
+		// Only handle shortcuts when not typing in inputs
+		if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) {
+			return;
+		}
+
+		switch (e.key.toLowerCase()) {
+			case 'f':
+				e.preventDefault();
+				fitToView();
+				break;
+			case '1':
+				e.preventDefault();
+				setView('front');
+				break;
+			case '2':
+				e.preventDefault();
+				setView('back');
+				break;
+			case '3':
+				e.preventDefault();
+				setView('left');
+				break;
+			case '4':
+				e.preventDefault();
+				setView('right');
+				break;
+			case '5':
+				e.preventDefault();
+				setView('top');
+				break;
+			case '6':
+				e.preventDefault();
+				setView('bottom');
+				break;
+			case 'e':
+				if (e.metaKey || e.ctrlKey) {
+					e.preventDefault();
+					exportScene(spellName);
+				}
+				break;
+		}
+	}
+
 	function onJsonKey(e: KeyboardEvent) {
 		if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
 			applyManual();
 			e.preventDefault();
+		}
+	}
+
+	function setView(viewName = '') {
+		if (viewer?.setView) {
+			viewer.setView(viewName);
 		}
 	}
 
@@ -261,7 +311,11 @@
 	});
 </script>
 
-<svelte:window on:mousemove={handleResize} on:mouseup={stopResize} />
+<svelte:window
+	on:mousemove={handleResize}
+	on:mouseup={stopResize}
+	on:keydown={handleKeyboardShortcuts}
+/>
 
 <div class="wrapper">
 	<!-- ───── Sidebar ───── -->
@@ -373,73 +427,205 @@
 		<div class="handle" onmousedown={startResize}></div>
 	</div>
 
-	<!-- ───── 3-D viewer ───── -->
-	<canvas bind:this={canvas}></canvas>
+	<!-- ───── 3-D viewer area ───── -->
+	<div class="viewer-container">
+		<canvas bind:this={canvas}></canvas>
 
-	<!-- Export Buttons -->
-	<div class="export-buttons">
-		<button class="export-fab" onclick={fitToView} title="Fit camera to show all objects">
-			<svg
-				width="16"
-				height="16"
-				viewBox="0 0 24 24"
-				stroke="currentColor"
-				fill="none"
-				stroke-width="2"
-			>
-				<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-				<circle cx="9" cy="9" r="2" />
-				<path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-			</svg>
-			Fit
-		</button>
-		<button
-			class="export-fab"
-			onclick={() => {
-				exportScene(spellName);
-			}}
-			title="Export 3D scene as OBJ"
-		>
-			<svg
-				width="16"
-				height="16"
-				viewBox="0 0 24 24"
-				stroke="currentColor"
-				fill="none"
-				stroke-width="2"
-			>
-				<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-				<polyline points="7,10 12,15 17,10" />
-				<line x1="12" y1="15" x2="12" y2="3" />
-			</svg>
-			OBJ
-		</button>
+		<!-- Horizontal Toolbar (below canvas) -->
+		<div class="toolbar">
+			<!-- View Controls Group -->
+			<div class="toolbar-group">
+				<div class="group-label">Views</div>
+				<div class="view-controls">
+					<button class="view-btn" onclick={fitToView} title="Fit camera to show all objects">
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							fill="none"
+							stroke-width="2"
+						>
+							<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+							<circle cx="9" cy="9" r="2" />
+							<path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+						</svg>
+						Fit
+					</button>
 
-		<button
-			class="export-fab"
-			onclick={exportGrasshopper}
-			disabled={busyExporting || !jsonText.trim() || !!jsonError}
-			title="Export as Grasshopper definition"
-		>
-			{#if busyExporting}
-				<div class="spinner mini"></div>
-				Exporting…
-			{:else}
-				<svg
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					fill="none"
-					stroke-width="2"
-				>
-					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-					<polyline points="7,10 12,15 17,10" />
-					<line x1="12" y1="15" x2="12" y2="3" />
-				</svg>
-				GHX
-			{/if}
-		</button>
+					<div class="view-divider"></div>
+
+					<button class="view-btn" onclick={() => setView('top')} title="Top View">
+						<span
+							><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+								<rect
+									x="3"
+									y="3"
+									width="14"
+									height="14"
+									stroke="black"
+									stroke-width="2"
+									fill="white"
+								/>
+								<rect x="6" y="6" width="8" height="3" fill="black" />
+							</svg>
+						</span>
+						Top
+					</button>
+					<button class="view-btn" onclick={() => setView('bottom')} title="Bottom View">
+						<span
+							><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+								<rect
+									x="3"
+									y="3"
+									width="14"
+									height="14"
+									stroke="black"
+									stroke-width="2"
+									fill="white"
+								/>
+								<rect x="6" y="11" width="8" height="3" fill="black" />
+							</svg>
+						</span>
+						Bottom
+					</button>
+					<button class="view-btn" onclick={() => setView('front')} title="Front View">
+						<span
+							><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+								<rect
+									x="3"
+									y="3"
+									width="14"
+									height="14"
+									stroke="black"
+									stroke-width="2"
+									fill="white"
+								/>
+								<rect x="6" y="13" width="8" height="3" fill="black" />
+								<rect x="6" y="6" width="8" height="5" fill="black" fill-opacity="0.2" />
+							</svg>
+						</span>
+						Front
+					</button>
+					<button class="view-btn" onclick={() => setView('back')} title="Back View">
+						<span
+							><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+								<rect
+									x="3"
+									y="3"
+									width="14"
+									height="14"
+									stroke="black"
+									stroke-width="2"
+									fill="white"
+								/>
+								<rect x="6" y="4" width="8" height="3" fill="black" />
+								<rect x="6" y="9" width="8" height="5" fill="black" fill-opacity="0.2" />
+							</svg>
+						</span>
+						Back
+					</button>
+					<button class="view-btn" onclick={() => setView('left')} title="Left View">
+						<span
+							><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+								<rect
+									x="3"
+									y="3"
+									width="14"
+									height="14"
+									stroke="black"
+									stroke-width="2"
+									fill="white"
+								/>
+								<rect x="4" y="6" width="3" height="8" fill="black" />
+							</svg>
+						</span>
+						Left
+					</button>
+					<button class="view-btn" onclick={() => setView('right')} title="Right View">
+						<span
+							><svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+								<rect
+									x="3"
+									y="3"
+									width="14"
+									height="14"
+									stroke="black"
+									stroke-width="2"
+									fill="white"
+								/>
+								<rect x="13" y="6" width="3" height="8" fill="black" />
+							</svg>
+						</span>
+						Right
+					</button>
+				</div>
+				<!-- View hints directly below view controls -->
+				<div class="group-hints">
+					<div class="hint">
+						<kbd>F</kbd> fit • <kbd>1-6</kbd> toggle views
+					</div>
+				</div>
+			</div>
+
+			<!-- Export Controls Group -->
+			<div class="toolbar-group">
+				<div class="group-label">Export</div>
+				<div class="export-controls">
+					<button
+						class="toolbar-btn"
+						onclick={() => exportScene(spellName)}
+						title="Export 3D scene as OBJ"
+					>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							fill="none"
+							stroke-width="2"
+						>
+							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+							<polyline points="7,10 12,15 17,10" />
+							<line x1="12" y1="15" x2="12" y2="3" />
+						</svg>
+						OBJ
+					</button>
+
+					<button
+						class="toolbar-btn"
+						onclick={exportGrasshopper}
+						disabled={busyExporting || !jsonText.trim() || !!jsonError}
+						title="Export as Grasshopper definition"
+					>
+						{#if busyExporting}
+							<div class="spinner mini"></div>
+							Exporting…
+						{:else}
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								fill="none"
+								stroke-width="2"
+							>
+								<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+								<polyline points="7,10 12,15 17,10" />
+								<line x1="12" y1="15" x2="12" y2="3" />
+							</svg>
+							GHX
+						{/if}
+					</button>
+				</div>
+				<!-- Export hints directly below export controls -->
+				<div class="group-hints">
+					<div class="hint">
+						<kbd>Ctrl/Cmd</kbd>+<kbd>E</kbd> export OBJ
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -463,8 +649,8 @@
 		border: 1px solid #e1e4e8;
 		border-radius: 16px;
 		box-shadow:
-			0 1px 2px rgba(27, 31, 35, 0.05),
-			0 1px 3px rgba(27, 31, 35, 0.1);
+			0 0 2px rgba(27, 31, 35, 0.05),
+			0 0 3px rgba(27, 31, 35, 0.1);
 		transition:
 			box-shadow 0.2s ease,
 			transform 0.1s ease;
@@ -472,6 +658,7 @@
 		margin: 10px;
 		box-sizing: border-box;
 	}
+
 	.brand-bar {
 		display: flex;
 		align-items: center;
@@ -483,16 +670,19 @@
 		text-decoration: none;
 		user-select: none;
 	}
+
 	.brand-bar img {
 		width: 20px;
 		height: 20px;
 	}
+
 	.brand-bar span {
 		font-size: 0.95rem;
 		font-weight: 600;
-		color: #0000eb; /* matches landing page primary colour */
+		color: #0000eb;
 		letter-spacing: 0.1px;
 	}
+
 	.brand-bar:hover {
 		background: #f3f4f6;
 	}
@@ -524,6 +714,7 @@
 		cursor: pointer;
 		transition: all 0.2s ease;
 		border-bottom: 2px solid transparent;
+		position: relative;
 	}
 
 	.tab-btn:hover {
@@ -538,10 +729,31 @@
 		font-weight: 600;
 	}
 
+	.tab-btn.modified::after {
+		content: '●';
+		position: absolute;
+		top: 5px;
+		right: 8px;
+		color: #0000eb;
+		font-size: 8px;
+	}
+
 	.tab-content {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+	}
+
+	.editor {
+		flex: 1;
+		padding: 16px 20px;
+		border: none;
+		resize: none;
+		outline: none;
+		font-family: SFMono-Regular, Consolas, monospace;
+		font-size: 13px;
+		line-height: 1.5;
+		background: #fff;
 	}
 
 	.prompt-editor {
@@ -555,20 +767,106 @@
 		font-style: italic;
 	}
 
-	.prompt-editor {
-		background: #fff !important;
-		color: #24292f;
-		border: 1px solid #e1e4e8;
+	.error-bar {
+		padding: 8px 20px;
+		background: #fff5f5;
+		border-top: 1px solid #fed7d7;
+		font-size: 12px;
+		color: #c53030;
 	}
 
-	.prompt-actions {
-		padding: 12px 20px;
-		background: #f6f8fa;
+	.control-card {
+		margin: 0px;
+		padding: 10px;
+		background-color: #fff;
 		border-top: 1px solid #e1e4e8;
+		border-radius: 0 0 20px 20px;
 		display: flex;
-		gap: 10px;
-		align-items: center;
+		flex-direction: column;
+		gap: 1rem;
 	}
+
+	.chat-box {
+		width: 100%;
+		min-height: 45px;
+		resize: none;
+		background: transparent;
+		border: none;
+		outline: none;
+		font-size: 1rem;
+		line-height: 1.4;
+		font-family: inherit;
+	}
+
+	.footer-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.hint {
+		font-size: 0.75rem;
+		color: #656d76;
+	}
+
+	kbd {
+		background: rgba(0, 0, 0, 0.08);
+		border-radius: 4px;
+		padding: 0 0.3rem;
+		font-size: 0.7rem;
+		font-family: monospace;
+	}
+
+	.generate-btn,
+	.apply-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		border: none;
+		border-radius: 8px;
+		padding: 0.7rem 1.5rem;
+		font-size: 0.95rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.generate-btn {
+		background: #0000eb;
+		color: #fff;
+		border: 2px solid #0000eb;
+	}
+
+	.generate-btn:hover:not(:disabled) {
+		background: rgba(255, 255, 255, 0.9);
+		transform: translateY(-1px);
+	}
+
+	.generate-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		transform: none;
+	}
+
+	.apply-btn {
+		justify-content: center;
+		background: transparent;
+		color: #0000eb;
+		border: 2px solid #0000eb;
+	}
+
+	.apply-btn:hover:not(:disabled) {
+		background: rgba(0, 0, 235, 0.6);
+		transform: translateY(-1px);
+	}
+
+	.apply-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
 	.apply-btn.has-changes {
 		background: #0000eb;
 		color: white;
@@ -585,128 +883,6 @@
 		}
 	}
 
-	.tab-btn {
-		position: relative;
-	}
-
-	/* Add small indicator for modified tabs */
-	.tab-btn.modified::after {
-		content: '●';
-		position: absolute;
-		top: 5px;
-		right: 8px;
-		color: #0000eb;
-		font-size: 8px;
-	}
-
-	.editor {
-		flex: 1;
-		padding: 16px 20px;
-		border: none;
-		resize: none;
-		outline: none;
-		font-family: SFMono-Regular, Consolas, monospace;
-		font-size: 13px;
-		line-height: 1.5;
-		background: #fff;
-	}
-
-	.error-bar {
-		padding: 8px 20px;
-		background: #fff5f5;
-		border-top: 1px solid #fed7d7;
-		font-size: 12px;
-		color: #c53030;
-	}
-
-	/* ---------- control card (same as before) ---------- */
-	.control-card {
-		margin: 0px;
-		padding: 10px;
-		background-color: #fff;
-		border-top: 1px solid #e1e4e8;
-		border-radius: 0 0 20px 20px;
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-	.chat-box {
-		width: 100%;
-		min-height: 45px;
-		resize: none;
-		background: transparent;
-		border: none;
-		outline: none;
-		font-size: 1rem;
-		line-height: 1.4;
-		font-family: inherit;
-	}
-	.footer-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 0.75rem;
-		flex-wrap: wrap;
-	}
-	.hint {
-		font-size: 0.8rem;
-		color: #555;
-	}
-	kbd {
-		background: rgba(0, 0, 0, 0.08);
-		border-radius: 4px;
-		padding: 0 0.3rem;
-		font-size: 0.7rem;
-		font-family: monospace;
-	}
-
-	.generate-btn,
-	.apply-btn,
-	.export-fab {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		border: none;
-		border-radius: 8px;
-		padding: 0.7rem 1.5rem;
-		font-size: 0.95rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.2s ease;
-	}
-	.generate-btn {
-		background: #0000eb;
-		color: #fff;
-		border: 2px solid #0000eb;
-	}
-	.generate-btn:hover:not(:disabled) {
-		background: rgba(255, 255, 255, 0.9);
-		transform: translateY(-1px);
-	}
-	.generate-btn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-		transform: none;
-	}
-
-	.apply-btn,
-	.export-fab {
-		justify-content: center;
-		background: transparent;
-		color: #0000eb;
-		border: 2px solid #0000eb;
-	}
-	.apply-btn:hover:not(:disabled),
-	.export-fab:hover:not(:disabled) {
-		background: rgba(0, 0, 235, 0.6);
-		transform: translateY(-1px);
-	}
-	.apply-btn:disabled,
-	.export-fab:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-
 	.spinner.mini {
 		width: 14px;
 		height: 14px;
@@ -715,6 +891,7 @@
 		border-radius: 50%;
 		animation: spin 1s linear infinite;
 	}
+
 	@keyframes spin {
 		to {
 			transform: rotate(360deg);
@@ -730,84 +907,194 @@
 		cursor: col-resize;
 		background: transparent;
 	}
+
 	.handle:hover {
 		background: rgba(0, 0, 0, 0.05);
 	}
 
-	/* viewer */
+	/* ---------- viewer container ---------- */
+	.viewer-container {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		background: #24292f;
+		margin: 10px 10px 10px 5px;
+		border-radius: 12px;
+		overflow: hidden;
+		min-height: 0;
+		box-shadow:
+			0 0 2px rgba(27, 31, 35, 0.05),
+			0 0 3px rgba(27, 31, 35, 0.1);
+		transition:
+			box-shadow 0.2s ease,
+			transform 0.1s ease;
+	}
+
 	canvas {
 		flex: 1;
 		width: 100%;
-		height: 100%;
+		min-height: 0;
 		display: block;
 		background: #24292f;
 	}
 
-	/* Export buttons container */
-	.export-buttons {
-		position: fixed;
-		right: 24px;
-		bottom: 24px;
+	/* ---------- toolbar ---------- */
+	.toolbar {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 24px;
+		background: rgba(255, 255, 255, 0.98);
+		border-top: 1px solid #e1e4e8;
+		padding: 12px 20px;
+		backdrop-filter: blur(8px);
+		min-height: 60px;
+	}
+
+	.toolbar-group {
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
+		gap: 6px;
+		align-items: flex-start;
 	}
 
-	.export-fab {
-		padding: 0.7rem 1.2rem;
+	.group-label {
+		font-size: 0.7rem;
 		font-weight: 600;
-		cursor: pointer;
-		justify-content: center;
-		background: transparent;
-		color: #0000eb;
-		border: 2px solid #0000eb;
-		transition: transform 0.15s ease;
-		min-width: 80px;
+		color: #656d76;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		margin-bottom: 2px;
 	}
 
-	.export-fab:hover:not(:disabled) {
-		transform: translateY(-2px);
-		background: rgba(0, 0, 235, 0.1);
+	.view-controls {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+		flex-wrap: wrap;
 	}
-	.export-fab:active:not(:disabled) {
+
+	.export-controls {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.view-divider {
+		width: 1px;
+		height: 24px;
+		background: #e1e4e8;
+		margin: 0 4px;
+	}
+
+	.toolbar-hints {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+	}
+
+	.view-btn,
+	.toolbar-btn {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		padding: 6px 10px;
+		border: 1px solid #e1e4e8;
+		border-radius: 6px;
+		background: #fff;
+		color: #24292f;
+		font-size: 0.75rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		white-space: nowrap;
+	}
+
+	.toolbar-btn {
+		padding: 8px 12px;
+		font-size: 0.8rem;
+	}
+
+	.view-btn:hover,
+	.toolbar-btn:hover:not(:disabled) {
+		background: #f6f8fa;
+		border-color: #0000eb;
+		transform: translateY(-1px);
+	}
+
+	.view-btn:active,
+	.toolbar-btn:active:not(:disabled) {
 		transform: translateY(0);
 	}
 
-	.ghx-export {
-		background: #228b22;
-		color: white;
-		border-color: #228b22;
+	.toolbar-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		transform: none;
 	}
 
-	.ghx-export:hover:not(:disabled) {
-		background: #32cd32;
-		border-color: #32cd32;
+	.view-btn span {
+		font-size: 10px;
 	}
 
-	.ghx-export:disabled {
-		background: #cccccc;
-		border-color: #cccccc;
-		color: #666666;
+	/* ---------- responsive ---------- */
+	@media (max-width: 768px) {
+		.toolbar {
+			flex-direction: column;
+			gap: 16px;
+			padding: 16px;
+			align-items: stretch;
+		}
+
+		.toolbar-group {
+			align-items: center;
+		}
+
+		.toolbar-hints {
+			margin-left: 0;
+			justify-content: center;
+		}
+
+		.view-controls {
+			justify-content: center;
+		}
+
+		.export-controls {
+			justify-content: center;
+		}
+
+		.viewer-container {
+			margin: 10px;
+		}
 	}
 
 	@media (max-width: 640px) {
 		.sidebar {
 			min-width: 260px;
 		}
+
 		.control-card {
 			margin: 12px;
 		}
+
 		.footer-row {
 			flex-direction: column;
 			align-items: stretch;
 		}
-		.export-buttons {
-			right: 12px;
-			bottom: 12px;
+
+		.view-btn {
+			padding: 6px 8px;
+			font-size: 0.7rem;
 		}
-		.export-fab {
-			padding: 0.5rem 1rem;
-			font-size: 0.85rem;
+
+		.toolbar-btn {
+			padding: 8px 10px;
+			font-size: 0.75rem;
+		}
+
+		.toolbar-hints .hint {
+			font-size: 0.7rem;
 		}
 	}
 </style>
