@@ -1,8 +1,4 @@
-# 🧙♂️ SpellShape WebApp
-
-[
-[
-[
+# 🧙 SpellShape WebApp
 
 **SpellShape WebApp** is the visual editor and runtime engine for the `.spell` parametric 3D format. This SvelteKit application provides an intuitive interface for creating, editing, and viewing parametric 3D models using natural language and direct JSON manipulation.
 
@@ -253,5 +249,3 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **Discord**: [SpellShape Community](https://discord.gg/spellshape) *(coming soon)*
 
 *Built with ❤️ for the future of parametric design*
-
-[1] https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/40074926/e72090ef-bdb6-4703-b494-3b7399d9df0d/paste.txt
