@@ -56,15 +56,15 @@ export async function POST({ request }) {
         });
 
         const response = await openai.chat.completions.create({
-            model: "gpt-4.1-mini",
+            model: "gpt-5-mini",
             messages: [
                 {
                     role: "user",
                     content: fewShotPrompt + prompt + '"\n◄ Detailed prompt:'
                 }
             ],
-            temperature: 0.7,
-            max_tokens: 400
+            temperature: 1,
+            max_completion_tokens: 4000
         });
 
 

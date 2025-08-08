@@ -49,14 +49,18 @@ export class FixedTemplateProcessor {
     if(node.position)   node.position  =node.position  .map(p=>this.evaluator.evaluate(p,ctx));
     if(node.rotation)   node.rotation  =node.rotation  .map(r=>this.evaluator.evaluate(r,ctx));
     for (const key of ['material', 'id', 'name']) {
-      if (typeof node[key] === 'string') {
-        // Always evaluate expressions that contain $ or if() or other dynamic content
-        if (node[key].includes('$') || node[key].includes('if(') || node[key].includes('mod(')) {
-          const result = this.evaluator.evaluate(node[key], ctx);
-          node[key] = result;
-        }
-      }
+  if (typeof node[key] === 'string') {
+    // If it's a math expression, evaluate it
+    if (node[key].includes('if(') || node[key].includes('mod(')) {
+      node[key] = this.evaluator.evaluate(node[key], ctx);
     }
+    // If it's a string template (e.g. "stud_snout_$index"), do string replacement
+    else if (/\$\w+/.test(node[key])) {
+      node[key] = node[key].replace(/\$(\w+)/g, (_, p) => ctx[p] ?? `$${p}`);
+    }
+  }
+}
+
     if(node.children)   node.children  =this._walk(node.children,ctx);
     return node;
   }

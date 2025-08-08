@@ -203,7 +203,7 @@ export class FixedExpressionEvaluator {
   /* ---------- very small “sandbox” eval ------------------------------- */
   _safeEval(expr) {
     // quick sanity check: only allow rudimentary chars
-    if (!/^[\d+\-*/%.()<>!=&|,\s'"?:#\w]+$/.test(expr))
+    if (!/^[\d+\-*/%.()<>!=&|,\s'"?:#\w\[\]]+$/.test(expr))
       throw new Error('unsafe characters in expression');
     // string equality needs manual handling because `"a" == "b"` is not allowed in strict mode
     const fixed = expr
