@@ -38,7 +38,7 @@
 
 	async function startViewer(data: unknown) {
 		if (viewer?.dispose) viewer.dispose?.();
-		const { start } = await import('$lib/modules/framework.js');
+		const { start } = await import('spellshape-three');
 		viewer = await start(canvas, data);
 		if (viewer?.fitToScene) viewer.fitToScene();
 	}

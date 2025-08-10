@@ -15,24 +15,24 @@
 	});
 
 	onMount(() => {
-    // Ensure no GUI is present on the front page
-    import('$lib/modules/guiControls.js').then(({ destroyGUI }) => {
-        destroyGUI();
-    });
-});
+		// Ensure no GUI is present on the front page
+		import('spellshape-three').then(({ destroyGUI }) => {
+			destroyGUI?.();
+		});
+	});
 
-async function savePromtsAndSpells(prompt='', spell:any){
-	await fetch(`${page.url.origin}/api/savePromptAndSpell`, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						prompt: prompt,
-						spell: spell
-					})
-				});
-}
+	async function savePromtsAndSpells(prompt = '', spell: any) {
+		await fetch(`${page.url.origin}/api/savePromptAndSpell`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				prompt: prompt,
+				spell: spell
+			})
+		});
+	}
 
 	async function handleSubmit() {
 		if (!user) {
@@ -42,7 +42,7 @@ async function savePromtsAndSpells(prompt='', spell:any){
 
 		if (inputValue.trim()) {
 			isLoading = true;
-            statusMessage = '';
+			statusMessage = '';
 
 			try {
 				// Step 1: Check if we need to expand the prompt (short/basic prompts)
@@ -50,7 +50,7 @@ async function savePromtsAndSpells(prompt='', spell:any){
 
 				if (inputValue.trim().length < 50) {
 					console.log('Expanding basic prompt:', inputValue);
-                    statusMessage = 'Expanding prompt…';
+					statusMessage = 'Expanding prompt…';
 
 					const expandResponse = await fetch(`${page.url.origin}/api/expandPrompt`, {
 						method: 'POST',
@@ -73,7 +73,7 @@ async function savePromtsAndSpells(prompt='', spell:any){
 
 				// Step 2: Generate JSON schema with the final prompt
 				console.log('Generating 3D model for:', finalPrompt);
-                statusMessage = 'Generating .spell file…';
+				statusMessage = 'Generating .spell file…';
 
 				const schemaResponse = await fetch(`${page.url.origin}/api/generateJson`, {
 					method: 'POST',
@@ -91,7 +91,7 @@ async function savePromtsAndSpells(prompt='', spell:any){
 
 				const generatedSchema = await schemaResponse.json();
 				console.log('Generated schema:', generatedSchema);
-				await savePromtsAndSpells(finalPrompt, generatedSchema)
+				await savePromtsAndSpells(finalPrompt, generatedSchema);
 
 				schema.set(generatedSchema);
 				generatedPrompt.set(finalPrompt);
@@ -103,7 +103,7 @@ async function savePromtsAndSpells(prompt='', spell:any){
 				// You might want to show an error message to the user here
 			} finally {
 				isLoading = false;
-                statusMessage = '';
+				statusMessage = '';
 			}
 		}
 	}
@@ -431,13 +431,13 @@ Generate a realistic modern residential kitchen with real-time parameter updates
 		color: rgba(255, 255, 255, 0.8);
 		font-size: 0.875rem;
 	}
-    .status-message {
-    margin: 8px 0 0 0;
-    color: #fff;
-    font-size: 1.1rem;
-    padding: 0.4rem 0.9rem;
-    min-height: 1.3em;
-}
+	.status-message {
+		margin: 8px 0 0 0;
+		color: #fff;
+		font-size: 1.1rem;
+		padding: 0.4rem 0.9rem;
+		min-height: 1.3em;
+	}
 
 	kbd {
 		background: rgba(255, 255, 255, 0.15);
