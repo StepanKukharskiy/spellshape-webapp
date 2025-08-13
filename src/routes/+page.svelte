@@ -82,7 +82,8 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        prompt: finalPrompt
+                        prompt: finalPrompt,
+                        questionOnly: false
                     })
                 });
 
