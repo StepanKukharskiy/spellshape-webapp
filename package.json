@@ -43,7 +43,7 @@
 		"dotenv": "^17.2.0",
 		"openai": "^5.10.2",
 		"pocketbase": "^0.26.2",
-		"spellshape-three": "^0.0.4",
+		"spellshape-three": "^0.1.0",
 		"three": "^0.178.0"
 	}
 }
