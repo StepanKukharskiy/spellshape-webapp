@@ -213,27 +213,38 @@
 		busyChatting = true;
 		try {
 			// Check if it's an edit command
-        const isEditCommand = userMessage.toLowerCase().startsWith('/edit');
-        
-        // Remove the /edit prefix for processing
-        const actualPrompt = isEditCommand ? userMessage.slice(5).trim() : userMessage;
+			const isEditCommand = userMessage.toLowerCase().startsWith('/edit');
 
-        const contextMessages = chatMessages.slice(-10).map((msg) => ({
-            role: msg.role,
-            content: msg.content
-        }));
+			// Remove the /edit prefix for processing
+			const actualPrompt = isEditCommand ? userMessage.slice(5).trim() : userMessage;
 
-        const response = await fetch('/api/generateJson', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-                prompt: actualPrompt,
-                schema: JSON.parse(jsonText),
-                chatHistory: contextMessages,
-                questionOnly: !isEditCommand  // Inverse: edit commands are NOT questions
-            })
-			});
+			const contextMessages = chatMessages.slice(-10).map((msg) => ({
+				role: msg.role,
+				content: msg.content
+			}));
 
+			let response;
+			if (isEditCommand) {
+				response = await fetch('/api/agent?op=generate', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						prompt: actualPrompt,
+						schema: JSON.parse(jsonText),
+					})
+				});
+			} else {
+				response = await fetch('/api/agent?op=chat', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						prompt: actualPrompt,
+						schema: JSON.parse(jsonText),
+						chatHistory: contextMessages,
+					})
+				});
+			}
+			
 			if (!response.ok) {
 				const errorText = await response.text();
 				throw new Error(errorText);
