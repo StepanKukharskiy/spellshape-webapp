@@ -699,7 +699,7 @@
 						</svg>
 						OBJ
 					</button>
-					<button
+					<!-- <button
 						class="btn btn-toolbar"
 						onclick={exportGrasshopper}
 						disabled={busyExporting || !jsonText.trim() || !!jsonError}
@@ -723,7 +723,7 @@
 							</svg>
 							GHX
 						{/if}
-					</button>
+					</button> -->
 				</div>
 				<div class="group-hints">
 					<div class="hint">
