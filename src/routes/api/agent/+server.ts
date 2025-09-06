@@ -7,7 +7,8 @@ const OP_MAP: Record<string, string> = {
   generate: '/api/agent/v1/generate',
   expand: '/api/agent/v1/expand',
   chat: '/api/agent/v1/chat',
-  explain: '/api/agent/v1/explain'
+  explain: '/api/agent/v1/explain',
+  vision: '/api/agent/v1/vision'
 };
 
 export async function POST({ request, url, locals }) {
