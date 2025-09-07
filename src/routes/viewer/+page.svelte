@@ -37,6 +37,8 @@
   let chatMessages = $state([]);
   let chatContainer: HTMLDivElement;
 
+  let chatMode = $state('chat'); // 'chat' or 'edit'
+
   // Chat message structure: { id, role, content, type, timestamp }
   function addChatMessage(role, content, type = 'text') {
     if (role === 'assistant' && content.toLowerCase().includes('sorry, i encountered an error')) {
@@ -287,7 +289,7 @@
       }));
 
       let response;
-      if (isEditCommand) {
+      if (isEditCommand || chatMode === 'edit') {
         response = await fetch('/api/agent?op=generate', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -610,6 +612,25 @@
     </div>
     {#if jsonError && activeTab === 'json'}<div class="error-bar">{jsonError}</div>{/if}
     <div class="control-card">
+      <div class="chat-mode-header">
+    <div class="mode-toggle">
+      <button
+        class="mode-btn {chatMode === 'chat' ? 'active' : ''}"
+        onclick={() => (chatMode = 'chat')}
+      >
+        Chat
+      </button>
+      <button
+        class="mode-btn {chatMode === 'edit' ? 'active' : ''}"
+        onclick={() => (chatMode = 'edit')}
+      >
+        Edit
+      </button>
+    </div>
+    <div class="mode-hint">
+      {chatMode === 'chat' ? 'Ask questions about your scene' : 'Request modifications to your scene'}
+    </div>
+  </div>
       <textarea
         class="chat-box"
         rows="2"
@@ -1350,13 +1371,63 @@
     font-size: 1rem;
     line-height: 1.4;
     font-family: inherit;
-    margin-bottom: 12px;
+    margin-bottom: 0px;
   }
   .chat-box:focus {
     outline: 2px solid #0000eb;
     outline-offset: -2px;
     border-color: #0000eb;
   }
+
+  .chat-mode-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 0px;
+}
+
+.mode-toggle {
+  display: flex;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  overflow: hidden;
+  align-self: flex-start;
+}
+
+.mode-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: #656d76;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-right: 1px solid #e1e4e8;
+}
+
+.mode-btn:last-child {
+  border-right: none;
+}
+
+.mode-btn:hover {
+  background: rgba(0, 0, 235, 0.04);
+  color: #0000eb;
+}
+
+.mode-btn.active {
+  background: #0000eb;
+  color: #fff;
+  font-weight: 600;
+}
+
+.mode-hint {
+  font-size: 0.75rem;
+  color: #656d76;
+  font-style: italic;
+}
+
 
   .footer-row {
     display: flex;
