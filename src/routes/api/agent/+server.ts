@@ -4,11 +4,11 @@ import { AGENT_BASE_URL } from '$env/static/private';
 
 // Map op => agent path (adjust as needed)
 const OP_MAP: Record<string, string> = {
-  generate: '/api/agent/v1/generate',
-  expand: '/api/agent/v1/expand',
-  chat: '/api/agent/v1/chat',
+  generate: '/api/agent/v2/generate',
+  expand: '/api/agent/v2/expand',
+  chat: '/api/agent/v2/chat',
   explain: '/api/agent/v1/explain',
-  vision: '/api/agent/v1/vision'
+  vision: '/api/agent/v2/vision'
 };
 
 export async function POST({ request, url, locals }) {
